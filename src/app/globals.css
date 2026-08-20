@@ -1,0 +1,466 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ─── */
+:root {
+  --peach-light: #FFF5EE;
+  --peach: #FFDAB9;
+  --peach-dark: #FFB088;
+  --cream: #FFF8F0;
+  --gold: #C9A96E;
+  --gold-light: #E8D5A8;
+  --royal-red: #B91C1C;
+  --royal-blue: #1E3A5F;
+  --glass-bg: rgba(255, 245, 238, 0.55);
+  --glass-border: rgba(201, 169, 110, 0.3);
+  --glass-shadow: 0 8px 32px rgba(45, 27, 0, 0.08);
+}
+
+@theme inline {
+  --color-peach-light: var(--peach-light);
+  --color-peach: var(--peach);
+  --color-peach-dark: var(--peach-dark);
+  --color-cream: var(--cream);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-royal-red: var(--royal-red);
+  --color-royal-blue: var(--royal-blue);
+  --font-playfair: var(--font-playfair);
+  --font-dancing: var(--font-dancing);
+}
+
+/* ─── Global Reset & Base ─── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-playfair), Georgia, serif;
+  background: var(--peach-light);
+  color: #2D1B00;
+  overflow-x: hidden;
+}
+
+/* ─── Glass Card Utility ─── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: rgba(255, 245, 238, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(201, 169, 110, 0.4);
+  box-shadow: 0 12px 48px rgba(45, 27, 0, 0.12);
+}
+
+/* ─── Royal Text Glow ─── */
+.royal-text {
+  background: linear-gradient(135deg, var(--royal-red), #DC2626, var(--royal-blue), #2563EB);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: royalShimmer 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(185, 28, 28, 0.3)) drop-shadow(0 0 20px rgba(30, 58, 95, 0.3));
+}
+
+@keyframes royalShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ─── Porcelain Texture Overlay ─── */
+.porcelain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 218, 185, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255, 176, 136, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(232, 213, 168, 0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ─── Hero Layered Shapes ─── */
+.hero-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.12;
+  filter: blur(1px);
+}
+
+.hero-shape-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, var(--peach-dark), transparent 70%);
+  top: -10%; left: -5%;
+  animation: float1 12s ease-in-out infinite;
+}
+
+.hero-shape-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, var(--gold-light), transparent 70%);
+  bottom: -15%; right: -10%;
+  animation: float2 15s ease-in-out infinite;
+}
+
+.hero-shape-3 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(185, 28, 28, 0.15), transparent 70%);
+  top: 20%; right: 10%;
+  animation: float3 18s ease-in-out infinite;
+}
+
+.hero-shape-4 {
+  width: 450px; height: 450px;
+  background: radial-gradient(circle, rgba(30, 58, 95, 0.1), transparent 70%);
+  bottom: 10%; left: 15%;
+  animation: float1 20s ease-in-out infinite reverse;
+}
+
+.hero-shape-5 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, var(--peach), transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: float2 14s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 20px) scale(1.08); }
+  66% { transform: translate(15px, -25px) scale(0.92); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, -15px) rotate(5deg); }
+}
+
+/* ─── Curved Border Layers ─── */
+.curved-layer {
+  position: absolute;
+  width: 100%;
+  pointer-events: none;
+}
+
+.curved-layer-1 {
+  height: 200px;
+  bottom: -1px;
+  background: var(--peach-light);
+  clip-path: ellipse(60% 100% at 50% 100%);
+}
+
+.curved-layer-2 {
+  height: 160px;
+  bottom: -1px;
+  background: rgba(255, 245, 238, 0.6);
+  backdrop-filter: blur(8px);
+  clip-path: ellipse(55% 100% at 50% 100%);
+  animation: breathe 8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.1); }
+}
+
+/* ─── Cloud / Smoke Transition ─── */
+.cloud-divider {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.cloud-layer {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+  bottom: 0;
+}
+
+.cloud-layer-1 {
+  background: radial-gradient(ellipse 30% 80% at 25% 80%, var(--peach-light) 0%, transparent 100%),
+              radial-gradient(ellipse 25% 70% at 50% 90%, rgba(255, 218, 185, 0.5) 0%, transparent 100%),
+              radial-gradient(ellipse 35% 90% at 75% 70%, var(--peach-light) 0%, transparent 100%);
+  animation: driftClouds 20s linear infinite;
+  opacity: 0.8;
+}
+
+.cloud-layer-2 {
+  background: radial-gradient(ellipse 28% 75% at 30% 85%, rgba(255, 245, 238, 0.9) 0%, transparent 100%),
+              radial-gradient(ellipse 32% 85% at 65% 75%, rgba(255, 240, 230, 0.7) 0%, transparent 100%);
+  animation: driftClouds 30s linear infinite reverse;
+  opacity: 0.6;
+}
+
+.cloud-layer-3 {
+  background: radial-gradient(ellipse 40% 100% at 50% 100%, rgba(255, 245, 238, 0.95) 0%, transparent 70%);
+}
+
+@keyframes driftClouds {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ─── Conveyor Belt ─── */
+.conveyor-row {
+  display: flex;
+  gap: 2rem;
+  width: max-content;
+}
+
+.conveyor-left {
+  animation: scrollLeft 60s linear infinite;
+}
+
+.conveyor-right {
+  animation: scrollRight 55s linear infinite;
+}
+
+@keyframes scrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes scrollRight {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+/* Pause on hover */
+.conveyor-row:hover {
+  animation-play-state: paused;
+}
+
+/* ─── Polaroid Card ─── */
+.polaroid {
+  flex-shrink: 0;
+  background: white;
+  padding: 10px 10px 40px 10px;
+  border-radius: 4px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  transform: rotate(var(--rotate, 0deg));
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.4s ease;
+  cursor: pointer;
+}
+
+.polaroid:hover {
+  transform: rotate(0deg) scale(1.05) !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+/* ─── Vintage Paper ─── */
+.vintage-paper {
+  background:
+    linear-gradient(135deg, #F5E6D3 0%, #EDE0D4 50%, #F5E6D3 100%);
+  border: 1px solid rgba(139, 119, 101, 0.3);
+  box-shadow:
+    inset 0 0 30px rgba(139, 119, 101, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.vintage-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 28px,
+      rgba(139, 119, 101, 0.06) 28px,
+      rgba(139, 119, 101, 0.06) 29px
+    );
+  pointer-events: none;
+}
+
+/* ─── Honeycomb Grid ─── */
+.honeycomb {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 1rem;
+}
+
+.honeycomb-cell {
+  width: 140px;
+  height: 120px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-family: var(--font-dancing), cursive;
+  color: #5C4033;
+  overflow: hidden;
+}
+
+.honeycomb-cell:hover {
+  background: rgba(201, 169, 110, 0.2);
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(201, 169, 110, 0.3);
+}
+
+/* ─── Curtain Animation ─── */
+.curtain-left,
+.curtain-right {
+  position: absolute;
+  top: 0;
+  width: 52%;
+  height: 100%;
+  background: linear-gradient(135deg, #8B0000, #B22222, #8B0000);
+  z-index: 20;
+  transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.curtain-left {
+  left: 0;
+  transform-origin: left center;
+}
+
+.curtain-right {
+  right: 0;
+  transform-origin: right center;
+}
+
+.curtain-open .curtain-left {
+  transform: translateX(-100%);
+}
+
+.curtain-open .curtain-right {
+  transform: translateX(100%);
+}
+
+/* ─── Letter Roll Animation ─── */
+@keyframes rollUp {
+  0% { transform: scaleY(1) rotateX(0deg); opacity: 1; }
+  50% { transform: scaleY(0.1) rotateX(45deg); opacity: 0.8; }
+  100% { transform: scaleY(0) rotateX(90deg); opacity: 0; }
+}
+
+.letter-rolling {
+  animation: rollUp 1.2s ease-in forwards;
+  transform-origin: top center;
+}
+
+/* ─── Scroll Reveal ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Lightbox ─── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-overlay img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Section Spacing ─── */
+section {
+  position: relative;
+}
+
+/* ─── Mobile Conveyor Adjustments ─── */
+@media (max-width: 768px) {
+  .conveyor-row {
+    gap: 1rem;
+  }
+  
+  .polaroid {
+    padding: 6px 6px 28px 6px;
+  }
+  
+  .honeycomb-cell {
+    width: 110px;
+    height: 95px;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .honeycomb-cell {
+    width: 90px;
+    height: 78px;
+    font-size: 0.55rem;
+  }
+}
+
+/* ─── Background Photo ─── */
+.hero-bg-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  filter: blur(2px) saturate(0.6);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--peach-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
