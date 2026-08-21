@@ -5,17 +5,41 @@ import { useEffect, useRef, useState, useCallback } from "react";
 export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [started, setStarted] = useState(false);
+  const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fadeVolume = useCallback((target: number, duration: number) => {
+    if (!audioRef.current) return;
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+
+    const audio = audioRef.current;
+    const startVol = audio.volume;
+    const diff = target - startVol;
+    const steps = 20;
+    const stepTime = duration / steps;
+    let step = 0;
+
+    fadeIntervalRef.current = setInterval(() => {
+      step++;
+      audio.volume = Math.max(0, Math.min(1, startVol + (diff * step) / steps));
+      if (step >= steps) {
+        clearInterval(fadeIntervalRef.current!);
+        fadeIntervalRef.current = null;
+        if (target === 0) audio.pause();
+      }
+    }, stepTime);
+  }, []);
 
   const startMusic = useCallback(() => {
     if (audioRef.current && !started) {
-      audioRef.current.volume = 0.3;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.volume = 0;
+      audioRef.current.play().then(() => {
+        fadeVolume(0.3, 1500);
+      }).catch(() => {});
       setStarted(true);
     }
-  }, [started]);
+  }, [started, fadeVolume]);
 
   useEffect(() => {
-    // Auto-start on first user interaction (browser policy)
     const handleInteraction = () => {
       startMusic();
       window.removeEventListener("click", handleInteraction);
@@ -27,29 +51,27 @@ export default function BackgroundMusic() {
     window.addEventListener("touchstart", handleInteraction);
     window.addEventListener("scroll", handleInteraction);
 
-    // Try autoplay as well
-    const timer = setTimeout(() => {
-      startMusic();
-    }, 1000);
-
     return () => {
       window.removeEventListener("click", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
       window.removeEventListener("scroll", handleInteraction);
-      clearTimeout(timer);
     };
   }, [startMusic]);
 
-  // Listen for video section visibility to pause/resume
+  // Smooth fade when video section is visible
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (audioRef.current) {
             if (entry.isIntersecting) {
-              audioRef.current.pause();
+              // Fade out and pause
+              fadeVolume(0, 1000);
             } else if (started) {
-              audioRef.current.play().catch(() => {});
+              // Resume and fade in
+              audioRef.current.play().then(() => {
+                fadeVolume(0.3, 1500);
+              }).catch(() => {});
             }
           }
         });
@@ -58,12 +80,17 @@ export default function BackgroundMusic() {
     );
 
     const videoSection = document.getElementById("video-section");
-    if (videoSection) {
-      observer.observe(videoSection);
-    }
+    if (videoSection) observer.observe(videoSection);
 
     return () => observer.disconnect();
-  }, [started]);
+  }, [started, fadeVolume]);
+
+  // Cleanup fade interval on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+    };
+  }, []);
 
   return (
     <audio

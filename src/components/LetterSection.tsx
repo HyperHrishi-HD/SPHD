@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PHOTOS from "@/lib/photos-manifest.json";
 
@@ -11,7 +11,7 @@ interface Letter {
   photoIndex: number;
 }
 
-// Pre-made letters from Hrishi (only the heartfelt ones)
+// Pre-made letters from Hrishi
 const PREMADE_LETTERS: Letter[] = [
   {
     id: "premade-1",
@@ -29,33 +29,23 @@ const PREMADE_LETTERS: Letter[] = [
   },
 ];
 
-// Local storage key
-const LETTERS_STORAGE_KEY = "sphd-letters";
+const LETTERS_STORAGE_KEY = "sphd-letters-v2";
 
-// Load letters from localStorage
 function loadLettersFromStorage(): Letter[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(LETTERS_STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch {
-    // Ignore parse errors
-  }
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
   return [];
 }
 
-// Save letters to localStorage
 function saveLettersToStorage(letters: Letter[]) {
   if (typeof window === "undefined") return;
   try {
-    // Only save user-submitted letters (not premade)
     const userLetters = letters.filter((l) => !l.id.startsWith("premade-"));
     localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(userLetters));
-  } catch {
-    // Ignore storage errors
-  }
+  } catch { /* ignore */ }
 }
 
 export default function LetterSection() {
@@ -69,7 +59,7 @@ export default function LetterSection() {
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Initialize letters from localStorage + premade
+  // Initialize from localStorage + premade
   useEffect(() => {
     const storedLetters = loadLettersFromStorage();
     setLetters([...PREMADE_LETTERS, ...storedLetters]);
@@ -77,16 +67,14 @@ export default function LetterSection() {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
-      },
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
       { threshold: 0.1 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Fetch approved letters from Firestore (and merge with local)
+  // Fetch from Firestore (backup — merge with local)
   useEffect(() => {
     const fetchLetters = async () => {
       try {
@@ -96,40 +84,41 @@ export default function LetterSection() {
           if (data.letters && data.letters.length > 0) {
             setLetters((prev) => {
               const existingIds = new Set(prev.map((l) => l.id));
-              const newLetters = data.letters.filter(
-                (l: Letter) => !existingIds.has(l.id)
-              );
-              return [...prev, ...newLetters];
+              const newLetters = data.letters.filter((l: Letter) => !existingIds.has(l.id));
+              if (newLetters.length > 0) {
+                const updated = [...prev, ...newLetters];
+                saveLettersToStorage(updated);
+                return updated;
+              }
+              return prev;
             });
           }
         }
       } catch {
-        // Firestore not configured yet, use local only
+        // Firebase not configured — localStorage is the source of truth
       }
     };
     fetchLetters();
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!letterContent.trim() || !letterAuthor.trim()) return;
 
     setIsSubmitting(true);
     setIsRolling(true);
 
-    // Animate roll-up
     setTimeout(async () => {
       try {
-        // Moderate content
+        // Auto-approve moderation
         const modRes = await fetch("/api/moderate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: letterContent }),
         });
-
         const modData = await modRes.json();
 
         if (!modData.isSafe) {
-          setSubmitMessage("Your letter didn't pass our content check. Please try again with a different message.");
+          setSubmitMessage("Your letter didn't pass our content check. Please try again.");
           setIsRolling(false);
           setIsSubmitting(false);
           setLetterContent("");
@@ -138,40 +127,45 @@ export default function LetterSection() {
           return;
         }
 
-        // Submit letter
-        const subRes = await fetch("/api/letters/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: letterContent,
-            author: letterAuthor,
-          }),
-        });
-
+        // Create letter locally first (guaranteed to show)
         const newLetter: Letter = {
-          id: String(Date.now()),
+          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           content: letterContent,
           author: letterAuthor,
           photoIndex: Math.floor(Math.random() * PHOTOS.length),
         };
 
-        if (subRes.ok) {
-          const data = await subRes.json();
-          newLetter.id = data.id || newLetter.id;
-        }
+        // Try to save to Firebase
+        let serverId: string | null = null;
+        try {
+          const subRes = await fetch("/api/letters/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: letterContent, author: letterAuthor }),
+          });
+          if (subRes.ok) {
+            const data = await subRes.json();
+            if (data.id && !data.id.startsWith("local-")) {
+              serverId = data.id;
+            }
+          }
+        } catch { /* localStorage backup */ }
 
-        // Add to state and save to localStorage
+        // Use server ID if available, otherwise local
+        if (serverId) newLetter.id = serverId;
+
+        // Add to state AND localStorage
         setLetters((prev) => {
-          const updated = [...prev, { ...newLetter, id: newLetter.id }];
+          const updated = [...prev, newLetter];
           saveLettersToStorage(updated);
           return updated;
         });
 
-        setSubmitMessage(subRes.ok ? "Your letter has been sent! ♥" : "Your letter has been saved locally! ♥");
+        setSubmitMessage("Your letter has been sent! ♥");
       } catch {
-        // Offline mode — still show the letter
+        // Complete offline — still add letter
         const newLetter: Letter = {
-          id: String(Date.now()),
+          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           content: letterContent,
           author: letterAuthor,
           photoIndex: Math.floor(Math.random() * PHOTOS.length),
@@ -190,9 +184,8 @@ export default function LetterSection() {
       setIsSubmitting(false);
       setTimeout(() => setSubmitMessage(""), 4000);
     }, 1400);
-  };
+  }, [letterContent, letterAuthor]);
 
-  // Get photo src from index (0-based) — falls back to last photo
   const getPhotoSrc = (index: number) => {
     const safeIndex = Math.abs(index) % PHOTOS.length;
     return PHOTOS[safeIndex].src;
@@ -200,7 +193,7 @@ export default function LetterSection() {
 
   return (
     <section ref={sectionRef} className="relative py-20 md:py-32 px-4 md:px-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-4xl mx-auto text-center">
         {/* Section Title */}
         <motion.div
           className="text-center mb-12 md:mb-16"
@@ -222,19 +215,14 @@ export default function LetterSection() {
           </p>
         </motion.div>
 
-        {/* Letter Form - Centered */}
+        {/* Letter Form — Centered */}
         <motion.div
           className="relative max-w-xl mx-auto mb-12 md:mb-16"
           initial={{ opacity: 0, y: 40 }}
           animate={visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <div
-            className={`vintage-paper rounded-lg p-6 md:p-8 ${
-              isRolling ? "letter-rolling" : ""
-            }`}
-          >
-            {/* Decorative corner */}
+          <div className={`vintage-paper rounded-lg p-6 md:p-8 ${isRolling ? "letter-rolling" : ""}`}>
             <div className="absolute top-3 left-3 text-gold/20 text-2xl">✦</div>
             <div className="absolute top-3 right-3 text-gold/20 text-2xl">✦</div>
 
@@ -289,9 +277,9 @@ export default function LetterSection() {
           )}
         </AnimatePresence>
 
-        {/* Honeycomb Grid */}
+        {/* Honeycomb Grid — centered */}
         <motion.div
-          className="honeycomb"
+          className="flex flex-wrap justify-center gap-3 md:gap-4 px-4"
           initial={{ opacity: 0 }}
           animate={visible ? { opacity: 1 } : {}}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -321,7 +309,6 @@ export default function LetterSection() {
             onClick={() => setSelectedLetter(null)}
           >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
             <motion.div
               className="relative z-10 max-w-lg w-full glass-strong rounded-2xl p-6 md:p-8"
               initial={{ scale: 0.9, y: 20 }}
@@ -329,7 +316,6 @@ export default function LetterSection() {
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close */}
               <button
                 className="absolute top-4 right-4 text-gold/40 hover:text-gold text-xl"
                 onClick={() => setSelectedLetter(null)}
@@ -337,20 +323,15 @@ export default function LetterSection() {
                 ✕
               </button>
 
-              {/* Random photo */}
               <div className="w-full h-40 md:h-48 rounded-lg overflow-hidden mb-4 md:mb-6 bg-peach/20">
                 <img
                   src={getPhotoSrc(selectedLetter.photoIndex)}
                   alt="Memory"
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
               </div>
 
-              {/* Letter Content */}
               <p
                 className="text-[#5C4033] text-base leading-relaxed mb-4 md:mb-6 whitespace-pre-wrap"
                 style={{ fontFamily: "var(--font-dancing)", fontSize: "1.1rem" }}

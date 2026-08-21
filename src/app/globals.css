@@ -249,7 +249,7 @@ body {
 .polaroid {
   flex-shrink: 0;
   background: white;
-  padding: 10px 10px 40px 10px;
+  padding: 10px 10px 14px 10px;
   border-radius: 4px;
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.08),
@@ -433,7 +433,7 @@ section {
   }
   
   .polaroid {
-    padding: 6px 6px 28px 6px;
+    padding: 6px 6px 10px 6px;
   }
   
   .honeycomb-cell {
@@ -496,4 +496,35 @@ section {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gold);
+}
+
+/* ─── Performance Optimizations ─── */
+section {
+  contain: layout style;
+}
+
+.polaroid {
+  will-change: transform;
+  contain: layout style paint;
+}
+
+.conveyor-row {
+  will-change: transform;
+}
+
+/* Reduce heavy effects on low-end devices */
+@supports (contain: layout style) {
+  .hero-bg-photo {
+    will-change: auto;
+  }
+}
+
+/* Disable will-change on elements that are static */
+.hero-shape {
+  will-change: auto;
+}
+
+/* Smooth scroll for the whole page */
+html {
+  -webkit-overflow-scrolling: touch;
 }

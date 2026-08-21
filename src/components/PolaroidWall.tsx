@@ -11,7 +11,6 @@ function splitIntoRows(photos: typeof PHOTOS) {
 
 const ROTATIONS = [-3, 2, -1, 3, -2, 1, -1.5, 2.5, -0.5, 1.5];
 
-/* Progressive Image — loads medium quality for smooth conveyor, full quality on click */
 function ProgressiveImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -24,20 +23,16 @@ function ProgressiveImage({ src, alt, className }: { src: string; alt: string; c
 
   if (error) {
     return (
-      <div className={`${className} flex items-center justify-center bg-peach/30 text-gold/40 text-3xl`}>
-        ♡
-      </div>
+      <div className={`${className} flex items-center justify-center bg-peach/30 text-gold/40 text-3xl`}>♡</div>
     );
   }
 
   return (
     <div className={`${className} relative overflow-hidden`}>
-      {/* Blur placeholder */}
       <div
         className="absolute inset-0 bg-peach-light/80 transition-opacity duration-500"
         style={{ opacity: isLoaded ? 0 : 1, filter: "blur(20px)", transform: "scale(1.1)" }}
       />
-      {/* Medium quality render for conveyor — small explicit size, browser optimizes */}
       <img
         ref={imgRef}
         src={src}
@@ -72,14 +67,12 @@ export default function PolaroidWall() {
   const rows = splitIntoRows(PHOTOS);
   const directions: ("conveyor-left" | "conveyor-right")[] = ["conveyor-left", "conveyor-right", "conveyor-left"];
 
-  const handlePrev = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex - 1 + PHOTOS.length) % PHOTOS.length);
-  };
-  const handleNext = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex + 1) % PHOTOS.length);
-  };
+  const handlePrev = useCallback(() => {
+    setLightboxIndex((prev) => (prev === null ? null : (prev - 1 + PHOTOS.length) % PHOTOS.length));
+  }, []);
+  const handleNext = useCallback(() => {
+    setLightboxIndex((prev) => (prev === null ? null : (prev + 1) % PHOTOS.length));
+  }, []);
 
   const toggleRowPause = useCallback((rowIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,16 +93,7 @@ export default function PolaroidWall() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [lightboxIndex]);
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return null;
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return null;
-      return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-    } catch { return null; }
-  };
+  }, [lightboxIndex, handlePrev, handleNext]);
 
   return (
     <section ref={sectionRef} className="relative py-16 md:py-24">
@@ -150,7 +134,6 @@ export default function PolaroidWall() {
                   rowIndex === 0 ? originalIndex
                   : rowIndex === 1 ? rows[0].length + originalIndex
                   : rows[0].length + rows[1].length + originalIndex;
-                const photoDate = formatDate(photo.date);
 
                 return (
                   <div
@@ -165,17 +148,7 @@ export default function PolaroidWall() {
                     <div className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] overflow-hidden bg-peach-light/50">
                       <ProgressiveImage src={photo.src} alt={photo.alt} className="w-full h-full" />
                     </div>
-                    {/* Only month+year on the right side — no counter */}
-                    <div className="flex items-center justify-end px-1 mt-2">
-                      {photoDate && (
-                        <p
-                          className="text-[9px] md:text-[10px] text-gray-400 tracking-wider"
-                          style={{ fontFamily: "var(--font-dancing)" }}
-                        >
-                          {photoDate}
-                        </p>
-                      )}
-                    </div>
+                    {/* Plain — no dates, no counters */}
                   </div>
                 );
               })}
@@ -244,11 +217,6 @@ export default function PolaroidWall() {
               <div className="text-white/50 text-sm tracking-widest">
                 {lightboxIndex + 1} / {PHOTOS.length}
               </div>
-              {PHOTOS[lightboxIndex].date && (
-                <div className="text-white/30 text-xs tracking-wider mt-1" style={{ fontFamily: "var(--font-dancing)" }}>
-                  {formatDate(PHOTOS[lightboxIndex].date)}
-                </div>
-              )}
             </div>
           </motion.div>
         )}

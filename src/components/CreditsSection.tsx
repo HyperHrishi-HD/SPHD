@@ -8,7 +8,7 @@ export default function CreditsSection() {
       {/* Decorative top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
-      <div className="max-w-2xl mx-auto text-center">
+      <div className="w-full max-w-2xl mx-auto text-center flex flex-col items-center">
         {/* Anniversary Text */}
         <motion.p
           className="text-gold/40 text-xs tracking-[0.3em] uppercase mb-6"
@@ -86,7 +86,7 @@ export default function CreditsSection() {
         </motion.p>
 
         {/* Copyright */}
-        <div className="mt-12 pt-6 border-t border-gold/10">
+        <div className="mt-12 pt-6 border-t border-gold/10 w-full">
           <p className="text-gold/20 text-[10px] tracking-wider leading-relaxed">
             © 2026 SPHD Project · All rights reserved · Built with love
           </p>

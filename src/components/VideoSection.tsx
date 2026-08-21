@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export default function VideoSection() {
   const [curtainOpen, setCurtainOpen] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,6 +24,14 @@ export default function VideoSection() {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Load video only after curtains start opening
+  useEffect(() => {
+    if (curtainOpen) {
+      const timer = setTimeout(() => setShouldLoadVideo(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [curtainOpen]);
 
   return (
     <section
@@ -46,7 +55,7 @@ export default function VideoSection() {
         }} />
       </div>
 
-      {/* Video Content */}
+      {/* Video Content — only loads after curtains open */}
       <motion.div
         className="relative z-10 w-full max-w-6xl mx-auto px-4"
         initial={{ opacity: 0, scale: 0.95 }}
@@ -54,13 +63,21 @@ export default function VideoSection() {
         transition={{ duration: 1, delay: 0.8 }}
       >
         <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-          <iframe
-            src="https://www.youtube.com/embed/b6sx7w1QBKM?autoplay=1&mute=1&rel=0"
-            title="Happy Anniversary Video"
-            className="absolute inset-0 w-full h-full rounded-lg"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          {shouldLoadVideo ? (
+            <iframe
+              src="https://www.youtube.com/embed/b6sx7w1QBKM?autoplay=1&mute=1&rel=0&enablejsapi=1"
+              title="Happy Anniversary Video"
+              className="absolute inset-0 w-full h-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="absolute inset-0 w-full h-full rounded-lg bg-black/80 flex items-center justify-center">
+              <div className="text-gold/30 text-lg" style={{ fontFamily: "var(--font-dancing)" }}>
+                Loading video...
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </section>

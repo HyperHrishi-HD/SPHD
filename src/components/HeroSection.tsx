@@ -10,7 +10,7 @@ function BlowingLeaf({ delay, startX, duration, size }: { delay: number; startX:
 
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="absolute pointer-events-none will-change-transform"
       style={{ left: `${startX}%`, top: "-5%", zIndex: 5 }}
       initial={{ y: "-10vh", x: 0, rotate: 0, opacity: 0 }}
       animate={{
@@ -38,7 +38,7 @@ function CherryBlossom({ delay, startX, duration, size }: { delay: number; start
 
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="absolute pointer-events-none will-change-transform"
       style={{ left: `${startX}%`, top: "-3%", zIndex: 5 }}
       initial={{ y: "-5vh", x: 0, rotate: 0, opacity: 0 }}
       animate={{
@@ -50,7 +50,6 @@ function CherryBlossom({ delay, startX, duration, size }: { delay: number; start
       transition={{ duration, delay, repeat: Infinity, ease: "easeInOut" }}
     >
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        {/* Five petals in a circle */}
         <ellipse cx="12" cy="5" rx="3.5" ry="5" fill="#FFB7C5" opacity="0.7" />
         <ellipse cx="12" cy="5" rx="3.5" ry="5" fill="#FFC0CB" opacity="0.6" transform="rotate(72 12 12)" />
         <ellipse cx="12" cy="5" rx="3.5" ry="5" fill="#FFB7C5" opacity="0.7" transform="rotate(144 12 12)" />
@@ -67,18 +66,14 @@ function ClipartCar({ direction, delay, color, lane }: { direction: "left" | "ri
   const shouldReduceMotion = useReducedMotion();
   if (shouldReduceMotion) return null;
 
-  // Cars driving RIGHT travel on the TOP lane (above yellow line)
-  // Cars driving LEFT travel on the BOTTOM lane (below yellow line = in front)
   const bottomPos = lane === "top" ? "37%" : "12%";
 
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="absolute pointer-events-none will-change-transform"
       style={{ bottom: bottomPos, zIndex: 6 }}
       initial={{ x: direction === "right" ? "-120px" : "calc(100vw + 120px)" }}
-      animate={{
-        x: direction === "right" ? "calc(100vw + 120px)" : "-120px",
-      }}
+      animate={{ x: direction === "right" ? "calc(100vw + 120px)" : "-120px" }}
       transition={{ duration: 10 + delay * 2, delay, repeat: Infinity, ease: "linear" }}
     >
       <svg width="80" height="36" viewBox="0 0 80 36" fill="none" style={{ transform: direction === "left" ? "scaleX(-1)" : "none" }}>
@@ -102,7 +97,7 @@ function Cloud({ x, y, size, speed, opacity }: { x: number; y: number; size: num
   const shouldReduceMotion = useReducedMotion();
   return (
     <motion.div
-      className="absolute pointer-events-none"
+      className="absolute pointer-events-none will-change-transform"
       style={{ left: `${x}%`, top: `${y}%`, zIndex: 1 }}
       animate={shouldReduceMotion ? {} : { x: [-20, 20, -20] }}
       transition={{ duration: speed, repeat: Infinity, ease: "easeInOut" }}
@@ -134,23 +129,22 @@ export default function HeroSection() {
     checkLowEnd();
   }, []);
 
-  const leaves = Array.from({ length: isLowEnd ? 4 : 8 }, (_, i) => ({
+  const leaves = Array.from({ length: isLowEnd ? 3 : 6 }, (_, i) => ({
     id: i,
-    delay: i * 2.5 + Math.random() * 2,
+    delay: i * 3 + Math.random() * 2,
     startX: 10 + Math.random() * 80,
-    duration: 10 + Math.random() * 6,
-    size: 24 + Math.random() * 16,
+    duration: 12 + Math.random() * 6,
+    size: 22 + Math.random() * 14,
   }));
 
-  const blossoms = Array.from({ length: isLowEnd ? 5 : 10 }, (_, i) => ({
+  const blossoms = Array.from({ length: isLowEnd ? 4 : 8 }, (_, i) => ({
     id: i,
-    delay: i * 2 + Math.random() * 3,
+    delay: i * 2.5 + Math.random() * 3,
     startX: 5 + Math.random() * 90,
-    duration: 8 + Math.random() * 7,
-    size: 14 + Math.random() * 12,
+    duration: 10 + Math.random() * 7,
+    size: 12 + Math.random() * 10,
   }));
 
-  // Cars — left-driving cars on bottom lane (in front of yellow line), right-driving on top lane
   const cars = [
     { direction: "right" as const, delay: 0, color: "#E74C3C", lane: "top" as const },
     { direction: "left" as const, delay: 2, color: "#3498DB", lane: "bottom" as const },
@@ -185,15 +179,13 @@ export default function HeroSection() {
       )}
 
       {/* ─── Clouds at Top ─── */}
-      {!isLowEnd && clouds.map((c, i) => (
-        <Cloud key={i} {...c} />
-      ))}
+      {!isLowEnd && clouds.map((c, i) => <Cloud key={i} {...c} />)}
 
       {/* ─── Translucent Nature Elements ─── */}
 
       {/* Left side — Large tree with sway */}
       <motion.div
-        className="absolute left-0 bottom-0 w-[280px] h-[400px] md:w-[350px] md:h-[500px] pointer-events-none"
+        className="absolute left-0 bottom-0 w-[280px] h-[400px] md:w-[350px] md:h-[500px] pointer-events-none will-change-transform"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 2, delay: 0.5 }}
@@ -224,7 +216,7 @@ export default function HeroSection() {
 
       {/* Right side — Flowering branch with sway */}
       <motion.div
-        className="absolute right-0 top-[15%] w-[220px] h-[300px] md:w-[280px] md:h-[380px] pointer-events-none"
+        className="absolute right-0 top-[15%] w-[220px] h-[300px] md:w-[280px] md:h-[380px] pointer-events-none will-change-transform"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 2, delay: 0.8 }}
@@ -260,18 +252,14 @@ export default function HeroSection() {
       </motion.div>
 
       {/* ─── Blowing Leaves ─── */}
-      {!isLowEnd && leaves.map((leaf) => (
-        <BlowingLeaf key={leaf.id} {...leaf} />
-      ))}
+      {!isLowEnd && leaves.map((leaf) => <BlowingLeaf key={leaf.id} {...leaf} />)}
 
       {/* ─── Falling Cherry Blossoms ─── */}
-      {!isLowEnd && blossoms.map((b) => (
-        <CherryBlossom key={`blossom-${b.id}`} {...b} />
-      ))}
+      {!isLowEnd && blossoms.map((b) => <CherryBlossom key={`blossom-${b.id}`} {...b} />)}
 
       {/* Bottom-left — Swaying Grass */}
       <motion.div
-        className="absolute bottom-[50px] left-[3%] w-[120px] h-[140px] pointer-events-none"
+        className="absolute bottom-[50px] left-[3%] w-[120px] h-[140px] pointer-events-none will-change-transform"
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.15 }}
         transition={{ duration: 2, delay: 1 }}
@@ -291,7 +279,6 @@ export default function HeroSection() {
               <path d="M60 100 Q58 66 63 36 Q65 16 60 3" />
               <path d="M70 100 Q68 72 72 44 Q74 24 70 10" />
             </g>
-            {/* Grass blades with leaves */}
             <g fill="#3A6B1E" opacity="0.3">
               <ellipse cx="14" cy="30" rx="6" ry="3" transform="rotate(-15 14 30)" />
               <ellipse cx="32" cy="35" rx="5" ry="2.5" transform="rotate(10 32 35)" />
@@ -304,7 +291,7 @@ export default function HeroSection() {
 
       {/* Bottom-right — Swaying Grass */}
       <motion.div
-        className="absolute bottom-[50px] right-[5%] w-[130px] h-[150px] pointer-events-none"
+        className="absolute bottom-[50px] right-[5%] w-[130px] h-[150px] pointer-events-none will-change-transform"
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.13 }}
         transition={{ duration: 2, delay: 1.2 }}
@@ -409,14 +396,109 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* ─── Road with Cars (extends past screen) ─── */}
-      <div className="pointer-events-none" style={{ zIndex: 4, position: "absolute", bottom: 0, left: "-5%", right: "-5%", height: "80px" }}>
+      {/* ─── Road Scene: grass, trees, house, road with cars ─── */}
+      <div className="pointer-events-none absolute bottom-0 left-[-5%] right-[-5%] h-[100px] md:h-[120px]" style={{ zIndex: 4 }}>
+        {/* Green grass strip above road */}
+        <div
+          className="absolute left-0 right-0 h-[30px] md:h-[35px]"
+          style={{ bottom: "50px", background: "linear-gradient(to bottom, #6B8E23 0%, #5A7A1A 100%)" }}
+        />
+
+        {/* ─── Small Trees (stationary, swaying) ─── */}
+        {/* Tree left */}
+        <div className="absolute bottom-[50px] left-[8%] md:left-[12%]" style={{ zIndex: 5 }}>
+          <motion.div
+            animate={shouldReduceMotion ? {} : { rotate: [0, 1.5, -1, 0.5, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ transformOrigin: "bottom center" }}
+          >
+            <svg width="50" height="80" viewBox="0 0 50 80" style={{ opacity: 0.6 }}>
+              <rect x="22" y="55" width="6" height="25" rx="2" fill="#8B4513" />
+              <ellipse cx="25" cy="40" rx="22" ry="22" fill="#2D7D2D" />
+              <ellipse cx="18" cy="35" rx="15" ry="15" fill="#3A8B3A" opacity="0.7" />
+              <ellipse cx="32" cy="38" rx="14" ry="14" fill="#4A9E4A" opacity="0.6" />
+              <ellipse cx="25" cy="28" rx="12" ry="12" fill="#5AB85A" opacity="0.5" />
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* Tree right */}
+        <div className="absolute bottom-[50px] right-[10%] md:right-[14%]" style={{ zIndex: 5 }}>
+          <motion.div
+            animate={shouldReduceMotion ? {} : { rotate: [0, -1, 1.5, -0.5, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            style={{ transformOrigin: "bottom center" }}
+          >
+            <svg width="45" height="75" viewBox="0 0 45 75" style={{ opacity: 0.55 }}>
+              <rect x="19" y="50" width="6" height="25" rx="2" fill="#8B4513" />
+              <ellipse cx="22" cy="35" rx="20" ry="20" fill="#2D7D2D" />
+              <ellipse cx="16" cy="30" rx="13" ry="13" fill="#3A8B3A" opacity="0.7" />
+              <ellipse cx="28" cy="33" rx="12" ry="12" fill="#4A9E4A" opacity="0.6" />
+              <ellipse cx="22" cy="22" rx="10" ry="10" fill="#5AB85A" opacity="0.5" />
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* Small tree left-center */}
+        <div className="absolute bottom-[50px] left-[25%] md:left-[30%]" style={{ zIndex: 5 }}>
+          <motion.div
+            animate={shouldReduceMotion ? {} : { rotate: [0, 1, -0.8, 0.3, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ transformOrigin: "bottom center" }}
+          >
+            <svg width="35" height="60" viewBox="0 0 35 60" style={{ opacity: 0.5 }}>
+              <rect x="15" y="40" width="5" height="20" rx="2" fill="#8B4513" />
+              <ellipse cx="17" cy="28" rx="16" ry="16" fill="#3A8B3A" />
+              <ellipse cx="17" cy="20" rx="10" ry="10" fill="#4A9E4A" opacity="0.6" />
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* ─── Small House ─── */}
+        <div className="absolute bottom-[50px] left-[40%] md:left-[45%]" style={{ zIndex: 5 }}>
+          <svg width="60" height="50" viewBox="0 0 60 50" style={{ opacity: 0.45 }}>
+            {/* Roof */}
+            <polygon points="5,22 30,5 55,22" fill="#A0522D" stroke="#8B4513" strokeWidth="0.5" />
+            {/* House body */}
+            <rect x="10" y="22" width="40" height="28" fill="#F5E6D3" stroke="#D2B48C" strokeWidth="0.5" />
+            {/* Door */}
+            <rect x="25" y="32" width="10" height="18" rx="1" fill="#8B4513" />
+            <circle cx="33" cy="42" r="1" fill="#FFD700" />
+            {/* Windows */}
+            <rect x="14" y="28" width="8" height="8" rx="0.5" fill="#E8F4FD" stroke="#D2B48C" strokeWidth="0.3" />
+            <line x1="18" y1="28" x2="18" y2="36" stroke="#D2B48C" strokeWidth="0.3" />
+            <line x1="14" y1="32" x2="22" y2="32" stroke="#D2B48C" strokeWidth="0.3" />
+            <rect x="38" y="28" width="8" height="8" rx="0.5" fill="#E8F4FD" stroke="#D2B48C" strokeWidth="0.3" />
+            <line x1="42" y1="28" x2="42" y2="36" stroke="#D2B48C" strokeWidth="0.3" />
+            <line x1="38" y1="32" x2="46" y2="32" stroke="#D2B48C" strokeWidth="0.3" />
+            {/* Chimney */}
+            <rect x="42" y="8" width="6" height="14" fill="#A0522D" />
+          </svg>
+        </div>
+
+        {/* ─── Grass tufts near road ─── */}
+        {[15, 35, 55, 72, 88].map((pos, i) => (
+          <div key={`grass-${i}`} className="absolute bottom-[50px]" style={{ left: `${pos}%`, zIndex: 5 }}>
+            <motion.div
+              animate={shouldReduceMotion ? {} : { rotate: [0, 2, -1, 1, 0] }}
+              transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut" }}
+              style={{ transformOrigin: "bottom center" }}
+            >
+              <svg width="20" height="25" viewBox="0 0 20 25" style={{ opacity: 0.45 }}>
+                <path d="M10 25 Q8 15 6 5" stroke="#4A8C2A" strokeWidth="1.2" fill="none" />
+                <path d="M10 25 Q11 14 14 4" stroke="#5A9E2F" strokeWidth="1.2" fill="none" />
+                <path d="M10 25 Q12 16 16 8" stroke="#3A6B1E" strokeWidth="1" fill="none" />
+              </svg>
+            </motion.div>
+          </div>
+        ))}
+
         {/* Road surface */}
         <div
           className="absolute bottom-0 left-0 right-0 h-[50px]"
           style={{ background: "linear-gradient(to bottom, #555 0%, #444 50%, #333 100%)" }}
         />
-        {/* Road center line (yellow dashed) — cars driving LEFT go BELOW this, cars RIGHT go ABOVE */}
+        {/* Road center line (yellow dashed) */}
         <div className="absolute bottom-[24px] left-0 right-0 h-[2px] overflow-hidden">
           <div
             className="h-full"
@@ -431,9 +513,7 @@ export default function HeroSection() {
         <div className="absolute bottom-[3px] left-0 right-0 h-[2px] bg-white/20" />
 
         {/* Animated Cars */}
-        {!isLowEnd && cars.map((car, i) => (
-          <ClipartCar key={i} {...car} />
-        ))}
+        {!isLowEnd && cars.map((car, i) => <ClipartCar key={i} {...car} />)}
       </div>
 
       {/* Curved Bottom Border */}
