@@ -16,6 +16,63 @@ function splitIntoRows(photos: typeof PHOTOS) {
 
 const ROTATIONS = [-3, 2, -1, 3, -2, 1, -1.5, 2.5, -0.5, 1.5];
 
+// Progressive Image component with blur-up effect
+function ProgressiveImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    if (img.complete) {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  if (error) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-peach/30 text-gold/40 text-3xl`}>
+        ♡
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${className} relative overflow-hidden`}>
+      {/* Blur placeholder */}
+      <div
+        className="absolute inset-0 bg-peach-light/80 transition-opacity duration-500"
+        style={{
+          opacity: isLoaded ? 0 : 1,
+          filter: "blur(20px)",
+          transform: "scale(1.1)",
+        }}
+      />
+      {/* Actual image */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        className="w-full h-full object-cover transition-opacity duration-500"
+        style={{ opacity: isLoaded ? 1 : 0 }}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 export default function PolaroidWall() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
@@ -76,7 +133,7 @@ export default function PolaroidWall() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [lightboxIndex]);
 
-  // Format date for display
+  // Format date for display (month + year only)
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return null;
     try {
@@ -154,23 +211,10 @@ export default function PolaroidWall() {
                     }}
                   >
                     <div className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] overflow-hidden bg-peach-light/50">
-                      <img
+                      <ProgressiveImage
                         src={photo.src}
                         alt={photo.alt}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = "none";
-                          const parent = target.parentElement;
-                          if (parent && !parent.querySelector(".placeholder")) {
-                            const div = document.createElement("div");
-                            div.className =
-                              "placeholder w-full h-full flex items-center justify-center bg-peach/30 text-gold/40 text-3xl";
-                            div.textContent = "♡";
-                            parent.appendChild(div);
-                          }
-                        }}
+                        className="w-full h-full"
                       />
                     </div>
                     <div className="flex items-center justify-between px-1 mt-2">

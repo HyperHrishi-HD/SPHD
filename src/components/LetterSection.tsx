@@ -29,8 +29,37 @@ const PREMADE_LETTERS: Letter[] = [
   },
 ];
 
+// Local storage key
+const LETTERS_STORAGE_KEY = "sphd-letters";
+
+// Load letters from localStorage
+function loadLettersFromStorage(): Letter[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LETTERS_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+
+// Save letters to localStorage
+function saveLettersToStorage(letters: Letter[]) {
+  if (typeof window === "undefined") return;
+  try {
+    // Only save user-submitted letters (not premade)
+    const userLetters = letters.filter((l) => !l.id.startsWith("premade-"));
+    localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(userLetters));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function LetterSection() {
-  const [letters, setLetters] = useState<Letter[]>(PREMADE_LETTERS);
+  const [letters, setLetters] = useState<Letter[]>([]);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [letterContent, setLetterContent] = useState("");
   const [letterAuthor, setLetterAuthor] = useState("");
@@ -39,6 +68,12 @@ export default function LetterSection() {
   const [submitMessage, setSubmitMessage] = useState("");
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Initialize letters from localStorage + premade
+  useEffect(() => {
+    const storedLetters = loadLettersFromStorage();
+    setLetters([...PREMADE_LETTERS, ...storedLetters]);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -51,7 +86,7 @@ export default function LetterSection() {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch approved letters from Firestore
+  // Fetch approved letters from Firestore (and merge with local)
   useEffect(() => {
     const fetchLetters = async () => {
       try {
@@ -59,11 +94,17 @@ export default function LetterSection() {
         if (res.ok) {
           const data = await res.json();
           if (data.letters && data.letters.length > 0) {
-            setLetters([...PREMADE_LETTERS, ...data.letters]);
+            setLetters((prev) => {
+              const existingIds = new Set(prev.map((l) => l.id));
+              const newLetters = data.letters.filter(
+                (l: Letter) => !existingIds.has(l.id)
+              );
+              return [...prev, ...newLetters];
+            });
           }
         }
       } catch {
-        // Firestore not configured yet, use premade only
+        // Firestore not configured yet, use local only
       }
     };
     fetchLetters();
@@ -107,41 +148,39 @@ export default function LetterSection() {
           }),
         });
 
+        const newLetter: Letter = {
+          id: String(Date.now()),
+          content: letterContent,
+          author: letterAuthor,
+          photoIndex: Math.floor(Math.random() * PHOTOS.length),
+        };
+
         if (subRes.ok) {
           const data = await subRes.json();
-          setLetters((prev) => [
-            ...prev,
-            {
-              id: data.id || String(Date.now()),
-              content: letterContent,
-              author: letterAuthor,
-              photoIndex: Math.floor(Math.random() * PHOTOS.length),
-            },
-          ]);
-          setSubmitMessage("Your letter has been sent! ♥");
-        } else {
-          setSubmitMessage("Letter saved locally. Server connection pending.");
-          setLetters((prev) => [
-            ...prev,
-            {
-              id: String(Date.now()),
-              content: letterContent,
-              author: letterAuthor,
-              photoIndex: Math.floor(Math.random() * PHOTOS.length),
-            },
-          ]);
+          newLetter.id = data.id || newLetter.id;
         }
+
+        // Add to state and save to localStorage
+        setLetters((prev) => {
+          const updated = [...prev, { ...newLetter, id: newLetter.id }];
+          saveLettersToStorage(updated);
+          return updated;
+        });
+
+        setSubmitMessage(subRes.ok ? "Your letter has been sent! ♥" : "Your letter has been saved locally! ♥");
       } catch {
         // Offline mode — still show the letter
-        setLetters((prev) => [
-          ...prev,
-          {
-            id: String(Date.now()),
-            content: letterContent,
-            author: letterAuthor,
-            photoIndex: Math.floor(Math.random() * PHOTOS.length),
-          },
-        ]);
+        const newLetter: Letter = {
+          id: String(Date.now()),
+          content: letterContent,
+          author: letterAuthor,
+          photoIndex: Math.floor(Math.random() * PHOTOS.length),
+        };
+        setLetters((prev) => {
+          const updated = [...prev, newLetter];
+          saveLettersToStorage(updated);
+          return updated;
+        });
         setSubmitMessage("Your letter has been added! ♥");
       }
 
@@ -160,11 +199,11 @@ export default function LetterSection() {
   };
 
   return (
-    <section ref={sectionRef} className="relative py-20 md:py-32 px-6">
-      <div className="max-w-5xl mx-auto">
+    <section ref={sectionRef} className="relative py-20 md:py-32 px-4 md:px-6">
+      <div className="max-w-4xl mx-auto">
         {/* Section Title */}
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
@@ -183,50 +222,54 @@ export default function LetterSection() {
           </p>
         </motion.div>
 
-        {/* Letter Form */}
+        {/* Letter Form - Centered */}
         <motion.div
-          className={`vintage-paper rounded-lg p-8 md:p-10 max-w-2xl mx-auto mb-16 ${
-            isRolling ? "letter-rolling" : ""
-          }`}
+          className="relative max-w-xl mx-auto mb-12 md:mb-16"
           initial={{ opacity: 0, y: 40 }}
           animate={visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          {/* Decorative corner */}
-          <div className="absolute top-3 left-3 text-gold/20 text-2xl">✦</div>
-          <div className="absolute top-3 right-3 text-gold/20 text-2xl">✦</div>
+          <div
+            className={`vintage-paper rounded-lg p-6 md:p-8 ${
+              isRolling ? "letter-rolling" : ""
+            }`}
+          >
+            {/* Decorative corner */}
+            <div className="absolute top-3 left-3 text-gold/20 text-2xl">✦</div>
+            <div className="absolute top-3 right-3 text-gold/20 text-2xl">✦</div>
 
-          <textarea
-            value={letterContent}
-            onChange={(e) => {
-              if (e.target.value.length <= 500) setLetterContent(e.target.value);
-            }}
-            placeholder="Write your letter here..."
-            className="w-full h-40 bg-transparent resize-none outline-none text-[#5C4033] text-sm md:text-base leading-relaxed"
-            style={{ fontFamily: "var(--font-dancing)", fontSize: "1.05rem" }}
-            disabled={isSubmitting}
-          />
-
-          <div className="flex items-end justify-between mt-4 pt-4 border-t border-gold/10">
-            <input
-              type="text"
-              value={letterAuthor}
-              onChange={(e) => setLetterAuthor(e.target.value)}
-              placeholder="Your name"
-              className="bg-transparent outline-none text-[#5C4033] text-sm w-40"
-              style={{ fontFamily: "var(--font-dancing)" }}
+            <textarea
+              value={letterContent}
+              onChange={(e) => {
+                if (e.target.value.length <= 500) setLetterContent(e.target.value);
+              }}
+              placeholder="Write your letter here..."
+              className="w-full h-32 md:h-40 bg-transparent resize-none outline-none text-[#5C4033] text-sm md:text-base leading-relaxed"
+              style={{ fontFamily: "var(--font-dancing)", fontSize: "1.05rem" }}
               disabled={isSubmitting}
             />
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-gold/40">{letterContent.length}/500</span>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !letterContent.trim() || !letterAuthor.trim()}
-                className="px-6 py-2 rounded-full bg-gold/20 text-gold text-sm tracking-wider hover:bg-gold/30 transition-colors disabled:opacity-40"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                {isSubmitting ? "Sending..." : "Send Letter"}
-              </button>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-4 mt-4 pt-4 border-t border-gold/10">
+              <input
+                type="text"
+                value={letterAuthor}
+                onChange={(e) => setLetterAuthor(e.target.value)}
+                placeholder="Your name"
+                className="bg-transparent outline-none text-[#5C4033] text-sm w-full sm:w-40"
+                style={{ fontFamily: "var(--font-dancing)" }}
+                disabled={isSubmitting}
+              />
+              <div className="flex items-center justify-between sm:justify-end gap-4">
+                <span className="text-xs text-gold/40">{letterContent.length}/500</span>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !letterContent.trim() || !letterAuthor.trim()}
+                  className="px-6 py-2 rounded-full bg-gold/20 text-gold text-sm tracking-wider hover:bg-gold/30 transition-colors disabled:opacity-40"
+                  style={{ fontFamily: "var(--font-playfair)" }}
+                >
+                  {isSubmitting ? "Sending..." : "Send Letter"}
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -271,7 +314,7 @@ export default function LetterSection() {
       <AnimatePresence>
         {selectedLetter && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -280,7 +323,7 @@ export default function LetterSection() {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
             <motion.div
-              className="relative z-10 max-w-lg w-full glass-strong rounded-2xl p-8 md:p-10"
+              className="relative z-10 max-w-lg w-full glass-strong rounded-2xl p-6 md:p-8"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -295,7 +338,7 @@ export default function LetterSection() {
               </button>
 
               {/* Random photo */}
-              <div className="w-full h-48 rounded-lg overflow-hidden mb-6 bg-peach/20">
+              <div className="w-full h-40 md:h-48 rounded-lg overflow-hidden mb-4 md:mb-6 bg-peach/20">
                 <img
                   src={getPhotoSrc(selectedLetter.photoIndex)}
                   alt="Memory"
@@ -309,7 +352,7 @@ export default function LetterSection() {
 
               {/* Letter Content */}
               <p
-                className="text-[#5C4033] text-base leading-relaxed mb-6 whitespace-pre-wrap"
+                className="text-[#5C4033] text-base leading-relaxed mb-4 md:mb-6 whitespace-pre-wrap"
                 style={{ fontFamily: "var(--font-dancing)", fontSize: "1.1rem" }}
               >
                 {selectedLetter.content}
