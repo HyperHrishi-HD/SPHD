@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+
+// Seeded random number generator (deterministic for SSR)
+function seededRandom(seed: number) {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
 
 /* ─── Blowing Leaf ─── */
 function BlowingLeaf({ delay, startX, duration, size }: { delay: number; startX: number; duration: number; size: number }) {
@@ -30,11 +36,9 @@ function BlowingLeaf({ delay, startX, duration, size }: { delay: number; startX:
 }
 
 /* ─── Falling Cherry Blossom ─── */
-function CherryBlossom({ delay, startX, duration, size }: { delay: number; startX: number; duration: number; size: number }) {
+function CherryBlossom({ delay, startX, duration, size, swayAmount }: { delay: number; startX: number; duration: number; size: number; swayAmount: number }) {
   const shouldReduceMotion = useReducedMotion();
   if (shouldReduceMotion) return null;
-
-  const swayAmount = 40 + Math.random() * 60;
 
   return (
     <motion.div
@@ -116,9 +120,11 @@ function Cloud({ x, y, size, speed, opacity }: { x: number; y: number; size: num
 export default function HeroSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [isLowEnd, setIsLowEnd] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
+    setMounted(true);
     const checkLowEnd = () => {
       const nav = navigator as Navigator & { deviceMemory?: number; hardwareConcurrency?: number };
       const isLowMemory = nav.deviceMemory && nav.deviceMemory < 4;
@@ -129,20 +135,23 @@ export default function HeroSection() {
     checkLowEnd();
   }, []);
 
-  const leaves = Array.from({ length: isLowEnd ? 3 : 6 }, (_, i) => ({
+  const leafCount = isLowEnd ? 3 : 6;
+  const leaves = Array.from({ length: leafCount }, (_, i) => ({
     id: i,
-    delay: i * 3 + Math.random() * 2,
-    startX: 10 + Math.random() * 80,
-    duration: 12 + Math.random() * 6,
-    size: 22 + Math.random() * 14,
+    delay: i * 3 + seededRandom(i + 100) * 2,
+    startX: 10 + seededRandom(i + 200) * 80,
+    duration: 12 + seededRandom(i + 300) * 6,
+    size: 22 + seededRandom(i + 400) * 14,
   }));
 
-  const blossoms = Array.from({ length: isLowEnd ? 4 : 8 }, (_, i) => ({
+  const blossomCount = isLowEnd ? 4 : 8;
+  const blossoms = Array.from({ length: blossomCount }, (_, i) => ({
     id: i,
-    delay: i * 2.5 + Math.random() * 3,
-    startX: 5 + Math.random() * 90,
-    duration: 10 + Math.random() * 7,
-    size: 12 + Math.random() * 10,
+    delay: i * 2.5 + seededRandom(i + 500) * 3,
+    startX: 5 + seededRandom(i + 600) * 90,
+    duration: 10 + seededRandom(i + 700) * 7,
+    size: 12 + seededRandom(i + 800) * 10,
+    swayAmount: 40 + seededRandom(i + 900) * 60,
   }));
 
   const cars = [
@@ -168,7 +177,7 @@ export default function HeroSection() {
       <div className="porcelain absolute inset-0 pointer-events-none" />
 
       {/* Animated Layered Shapes */}
-      {!isLowEnd && (
+      {mounted && !isLowEnd && (
         <>
           <div className="hero-shape hero-shape-1" />
           <div className="hero-shape hero-shape-2" />
@@ -179,7 +188,7 @@ export default function HeroSection() {
       )}
 
       {/* ─── Clouds at Top ─── */}
-      {!isLowEnd && clouds.map((c, i) => <Cloud key={i} {...c} />)}
+      {mounted && !isLowEnd && clouds.map((c, i) => <Cloud key={i} {...c} />)}
 
       {/* ─── Translucent Nature Elements ─── */}
 
@@ -252,10 +261,10 @@ export default function HeroSection() {
       </motion.div>
 
       {/* ─── Blowing Leaves ─── */}
-      {!isLowEnd && leaves.map((leaf) => <BlowingLeaf key={leaf.id} {...leaf} />)}
+      {mounted && !isLowEnd && leaves.map((leaf) => <BlowingLeaf key={leaf.id} {...leaf} />)}
 
       {/* ─── Falling Cherry Blossoms ─── */}
-      {!isLowEnd && blossoms.map((b) => <CherryBlossom key={`blossom-${b.id}`} {...b} />)}
+      {mounted && !isLowEnd && blossoms.map((b) => <CherryBlossom key={`blossom-${b.id}`} {...b} />)}
 
       {/* Bottom-left — Swaying Grass */}
       <motion.div
@@ -513,7 +522,7 @@ export default function HeroSection() {
         <div className="absolute bottom-[3px] left-0 right-0 h-[2px] bg-white/20" />
 
         {/* Animated Cars */}
-        {!isLowEnd && cars.map((car, i) => <ClipartCar key={i} {...car} />)}
+        {mounted && !isLowEnd && cars.map((car, i) => <ClipartCar key={i} {...car} />)}
       </div>
 
       {/* Curved Bottom Border */}

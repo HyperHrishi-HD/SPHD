@@ -16,14 +16,14 @@ const PREMADE_LETTERS: Letter[] = [
   {
     id: "premade-1",
     content:
-      "What I admire most about you both is how you've built a life full of warmth and love, no matter what life throws your way. You've taught me that family isn't just about being in the same place — it's about carrying each other in your heart always.",
+      "18 years?? yall are literally goals. the way you two are still so annoyingly in love after all this time is honestly insane. love you both so much, Happy Anniversary Mom & Dad!!",
     author: "Hrishi",
     photoIndex: 14,
   },
   {
     id: "premade-2",
     content:
-      "Every year, no matter what happens, feels like a celebration because you two make it that way. Your love is the foundation of everything I am. Here's to many more years of laughter, adventure, and the kind of love that only gets better with time.",
+      "thank you for always being there no matter what. you guys are my whole world and i cant imagine life without you. cheers to 18 more years fr 💛",
     author: "Hrishi",
     photoIndex: 20,
   },
