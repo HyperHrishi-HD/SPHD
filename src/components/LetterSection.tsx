@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import PHOTOS from "@/lib/photos-manifest.json";
 
 interface Letter {
   id: string;
@@ -128,7 +129,7 @@ export default function LetterSection() {
               id: data.id || String(Date.now()),
               content: letterContent,
               author: letterAuthor,
-              photoIndex: Math.floor(Math.random() * 25) + 1,
+              photoIndex: Math.floor(Math.random() * PHOTOS.length),
             },
           ]);
           setSubmitMessage("Your letter has been sent! ♥");
@@ -140,7 +141,7 @@ export default function LetterSection() {
               id: String(Date.now()),
               content: letterContent,
               author: letterAuthor,
-              photoIndex: Math.floor(Math.random() * 25) + 1,
+              photoIndex: Math.floor(Math.random() * PHOTOS.length),
             },
           ]);
         }
@@ -152,7 +153,7 @@ export default function LetterSection() {
             id: String(Date.now()),
             content: letterContent,
             author: letterAuthor,
-            photoIndex: Math.floor(Math.random() * 25) + 1,
+            photoIndex: Math.floor(Math.random() * PHOTOS.length),
           },
         ]);
         setSubmitMessage("Your letter has been added! ♥");
@@ -164,6 +165,12 @@ export default function LetterSection() {
       setIsSubmitting(false);
       setTimeout(() => setSubmitMessage(""), 4000);
     }, 1400);
+  };
+
+  // Get photo src from index (0-based) — falls back to last photo
+  const getPhotoSrc = (index: number) => {
+    const safeIndex = Math.abs(index) % PHOTOS.length;
+    return PHOTOS[safeIndex].src;
   };
 
   return (
@@ -304,7 +311,7 @@ export default function LetterSection() {
               {/* Random photo */}
               <div className="w-full h-48 rounded-lg overflow-hidden mb-6 bg-peach/20">
                 <img
-                  src={`/photos/photo-${String(selectedLetter.photoIndex).padStart(2, "0")}.jpg`}
+                  src={getPhotoSrc(selectedLetter.photoIndex)}
                   alt="Memory"
                   className="w-full h-full object-cover"
                   onError={(e) => {

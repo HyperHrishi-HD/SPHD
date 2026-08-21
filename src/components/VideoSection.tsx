@@ -55,7 +55,7 @@ export default function VideoSection() {
       >
         <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
           <iframe
-            src="https://www.youtube.com/embed/b6sx7w1QBKM?autoplay=0&rel=0"
+            src="https://www.youtube.com/embed/b6sx7w1QBKM?autoplay=1&mute=1&rel=0"
             title="Happy Anniversary Video"
             className="absolute inset-0 w-full h-full rounded-lg"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

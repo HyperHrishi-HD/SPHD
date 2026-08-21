@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Photo configuration — all photos from public/photos/
-const ALL_PHOTOS = Array.from({ length: 25 }, (_, i) => ({
-  id: i + 1,
-  src: `/photos/photo-${String(i + 1).padStart(2, "0")}.jpg`,
-  alt: `Memory ${i + 1}`,
-}));
+import PHOTOS from "@/lib/photos-manifest.json";
 
 // Split photos into 3 roughly equal rows
-function splitIntoRows(photos: typeof ALL_PHOTOS) {
+function splitIntoRows(photos: typeof PHOTOS) {
   const third = Math.ceil(photos.length / 3);
   return [
     photos.slice(0, third),
@@ -38,7 +32,7 @@ export default function PolaroidWall() {
     return () => observer.disconnect();
   }, []);
 
-  const rows = splitIntoRows(ALL_PHOTOS);
+  const rows = splitIntoRows(PHOTOS);
   const directions: ("conveyor-left" | "conveyor-right")[] = [
     "conveyor-left",
     "conveyor-right",
@@ -47,13 +41,25 @@ export default function PolaroidWall() {
 
   const handlePrev = () => {
     if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex - 1 + ALL_PHOTOS.length) % ALL_PHOTOS.length);
+    setLightboxIndex((lightboxIndex - 1 + PHOTOS.length) % PHOTOS.length);
   };
 
   const handleNext = () => {
     if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex + 1) % ALL_PHOTOS.length);
+    setLightboxIndex((lightboxIndex + 1) % PHOTOS.length);
   };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [lightboxIndex]);
 
   return (
     <section ref={sectionRef} className="relative py-16 md:py-24">
@@ -105,7 +111,7 @@ export default function PolaroidWall() {
                       ["--rotate" as string]: `${ROTATIONS[originalIndex % ROTATIONS.length]}deg`,
                     }}
                     onClick={() =>
-                      setLightboxIndex(globalIndex % ALL_PHOTOS.length)
+                      setLightboxIndex(globalIndex % PHOTOS.length)
                     }
                   >
                     <div className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] overflow-hidden bg-peach-light/50">
@@ -132,7 +138,7 @@ export default function PolaroidWall() {
                       className="text-center text-[10px] md:text-xs text-gray-400 mt-2 tracking-wider"
                       style={{ fontFamily: "monospace" }}
                     >
-                      {String(globalIndex + 1).padStart(2, "0")}/25
+                      {String((globalIndex % PHOTOS.length) + 1).padStart(2, "0")}/{String(PHOTOS.length).padStart(2, "0")}
                     </p>
                   </div>
                 );
@@ -185,24 +191,26 @@ export default function PolaroidWall() {
               ›
             </button>
 
-            <motion.img
-              key={lightboxIndex}
-              src={ALL_PHOTOS[lightboxIndex].src}
-              alt={ALL_PHOTOS[lightboxIndex].alt}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-              onClick={(e) => e.stopPropagation()}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = "none";
-              }}
-            />
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={lightboxIndex}
+                src={PHOTOS[lightboxIndex].src}
+                alt={PHOTOS[lightboxIndex].alt}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+                onClick={(e) => e.stopPropagation()}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                }}
+              />
+            </AnimatePresence>
 
             {/* Counter */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-sm tracking-widest z-50">
-              {lightboxIndex + 1} / {ALL_PHOTOS.length}
+              {lightboxIndex + 1} / {PHOTOS.length}
             </div>
           </motion.div>
         )}

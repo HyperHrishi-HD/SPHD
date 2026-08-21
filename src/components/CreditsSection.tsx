@@ -42,7 +42,7 @@ export default function CreditsSection() {
           viewport={{ once: true }}
         >
           <a
-            href="https://github.com/yourusername/SPHD"
+            href="https://github.com/HyperHrishi-HD/sphd-anniversary"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gold/50 hover:text-gold text-sm tracking-wider transition-colors"

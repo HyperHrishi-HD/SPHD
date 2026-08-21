@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `You are a content moderator for a family anniversary website. Analyze the following letter/text for appropriateness.
 

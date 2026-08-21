@@ -71,7 +71,7 @@ export default function BackgroundMusic() {
       loop
       preload="auto"
       className="hidden"
-      src="/audio/song.mp3"
+      src="/audio/song.m4a"
     />
   );
 }

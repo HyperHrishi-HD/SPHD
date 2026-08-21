@@ -354,11 +354,11 @@ body {
   transform-origin: right center;
 }
 
-.curtain-open .curtain-left {
+.curtain-left.curtain-open {
   transform: translateX(-100%);
 }
 
-.curtain-open .curtain-right {
+.curtain-right.curtain-open {
   transform: translateX(100%);
 }
 
@@ -443,7 +443,7 @@ section {
   inset: 0;
   background-size: cover;
   background-position: center;
-  opacity: 0.15;
+  opacity: 0.35;
   filter: blur(2px) saturate(0.6);
 }
 
