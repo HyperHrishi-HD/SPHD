@@ -30,7 +30,7 @@ export default function CreditsSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           viewport={{ once: true }}
         >
-          By Hyperhrishi HD
+          By HyperHrishi HD
         </motion.h3>
 
         {/* Links */}
@@ -42,7 +42,7 @@ export default function CreditsSection() {
           viewport={{ once: true }}
         >
           <a
-            href="https://github.com/HyperHrishi-HD/sphd-anniversary"
+            href="https://github.com/HyperHrishi-HD/SPHD"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gold/50 hover:text-gold text-sm tracking-wider transition-colors"

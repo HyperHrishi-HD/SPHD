@@ -1,10 +1,10 @@
-# SPHD — Happy Anniversary Mom & Dad
+# SPHD — Happy Anniversary!
 
 <p align="center">
   <strong>18 Years of Swapna & Praveen</strong><br/>
   August 21, 2008 → August 21, 2026<br/><br/>
   <a href="https://sphd.vercel.app">🌐 Live Site</a> · 
-  <a href="https://github.com/HyperHrishi-HD/sphd-anniversary">📁 GitHub</a> · 
+  <a href="https://github.com/HyperHrishi-HD/SPHD">📁 GitHub</a> · 
   <a href="https://youtube.com/@HyperhrishiHD">🎬 YouTube</a>
 </p>
 
@@ -16,7 +16,7 @@ A cinematic, single-page anniversary website built by their son **Hrishi** ([@Hy
 
 - **🎬 Hero Section** — Full-screen cinematic opening with animated nature shapes, royal gradient title, and porcelain texture overlays
 - **📸 Photo Wall** — 3 conveyor-belt rows of polaroid cards showcasing 25 family photos, with fullscreen lightbox and date metadata
-- **💌 Letter Section** — Vintage paper writing form with AI-powered content moderation (Google Gemini), honeycomb grid display, and glassmorphism modals
+- **💌 Letter Section** — Vintage paper writing form with honeycomb grid display and glassmorphism modals
 - **🎥 Video Finale** — Theater curtain reveal animation with embedded YouTube video
 - **🎵 Background Music** — Seamless looping audio that pauses during video playback
 - **📱 Responsive** — Beautiful on all screens, mobile-first design
@@ -30,7 +30,7 @@ A cinematic, single-page anniversary website built by their son **Hrishi** ([@Hy
 | **Tailwind CSS v4** | Styling |
 | **Framer Motion** | Animations |
 | **Firebase Admin** | Firestore for letters |
-| **Google Gemini** | AI content moderation |
+| **Google Gemini** | AI content moderation (temporarily disabled) |
 | **Web Audio API** | Background music playback |
 
 ## 🚀 Getting Started
@@ -43,8 +43,8 @@ A cinematic, single-page anniversary website built by their son **Hrishi** ([@Hy
 ### Installation
 
 ```bash
-git clone https://github.com/HyperHrishi-HD/sphd-anniversary.git
-cd sphd-anniversary
+git clone https://github.com/HyperHrishi-HD/SPHD.git
+cd SPHD
 npm install
 ```
 
@@ -53,9 +53,6 @@ npm install
 Create a `.env.local` file:
 
 ```env
-# Google Gemini (for letter moderation)
-GOOGLE_API_KEY=your_gemini_api_key
-
 # Firebase Admin (for storing letters)
 FIREBASE_PROJECT_ID=your_project_id
 FIREBASE_CLIENT_EMAIL=your_client_email
@@ -162,7 +159,7 @@ The app builds to standard Node.js. Deploy anywhere that supports Next.js.
 
 ## 📝 License
 
-© 2026 SPHD Project. Built with love by [Hyperhrishi HD](https://github.com/HyperHrishi-HD).
+© 2026 SPHD Project. Built with love by [HyperHrishi HD](https://github.com/HyperHrishi-HD).
 
 ---
 

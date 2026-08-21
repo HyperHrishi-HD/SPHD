@@ -19,18 +19,20 @@ export async function GET() {
     }
 
     const db = getFirestore();
+    // Query without composite index — order by createdAt desc only
     const snapshot = await db
       .collection("letters")
-      .where("approved", "==", true)
       .orderBy("createdAt", "desc")
       .limit(50)
       .get();
 
-    const letters = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.()?.toISOString(),
-    }));
+    const letters = snapshot.docs
+      .filter((doc) => doc.data().approved !== false) // client-side approved filter
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString(),
+      }));
 
     return NextResponse.json({ letters });
   } catch (error) {

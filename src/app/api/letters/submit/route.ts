@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const docRef = await db.collection("letters").add({
       content,
       author,
-      approved: false,
+      approved: true,
       photoIndex: Math.floor(Math.random() * 25) + 1,
       createdAt: new Date(),
     });
