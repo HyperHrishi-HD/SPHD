@@ -1,36 +1,172 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SPHD — Happy Anniversary Mom & Dad
 
-## Getting Started
+<p align="center">
+  <strong>18 Years of Swapna & Praveen</strong><br/>
+  August 21, 2008 → August 21, 2026<br/><br/>
+  <a href="https://sphd.vercel.app">🌐 Live Site</a> · 
+  <a href="https://github.com/HyperHrishi-HD/sphd-anniversary">📁 GitHub</a> · 
+  <a href="https://youtube.com/@HyperhrishiHD">🎬 YouTube</a>
+</p>
 
-First, run the development server:
+---
+
+A cinematic, single-page anniversary website built by their son **Hrishi** ([@HyperhrishiHD](https://youtube.com/@HyperhrishiHD)) to celebrate 18 beautiful years of love.
+
+## ✨ Features
+
+- **🎬 Hero Section** — Full-screen cinematic opening with animated nature shapes, royal gradient title, and porcelain texture overlays
+- **📸 Photo Wall** — 3 conveyor-belt rows of polaroid cards showcasing 25 family photos, with fullscreen lightbox and date metadata
+- **💌 Letter Section** — Vintage paper writing form with AI-powered content moderation (Google Gemini), honeycomb grid display, and glassmorphism modals
+- **🎥 Video Finale** — Theater curtain reveal animation with embedded YouTube video
+- **🎵 Background Music** — Seamless looping audio that pauses during video playback
+- **📱 Responsive** — Beautiful on all screens, mobile-first design
+
+## 🛠 Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **Next.js 16** (App Router) | Framework & API routes |
+| **React 19** | UI components |
+| **Tailwind CSS v4** | Styling |
+| **Framer Motion** | Animations |
+| **Firebase Admin** | Firestore for letters |
+| **Google Gemini** | AI content moderation |
+| **Web Audio API** | Background music playback |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm/yarn/pnpm
+
+### Installation
+
+```bash
+git clone https://github.com/HyperHrishi-HD/sphd-anniversary.git
+cd sphd-anniversary
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+# Google Gemini (for letter moderation)
+GOOGLE_API_KEY=your_gemini_api_key
+
+# Firebase Admin (for storing letters)
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_PRIVATE_KEY=your_private_key
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 📁 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+sphd-anniversary/
+├── public/
+│   ├── audio/
+│   │   └── song.m4a          # Background music
+│   └── photos/
+│       ├── hero.jpg           # Hero background
+│       └── *.jpg              # Family photos
+├── scripts/
+│   └── generate-photos-manifest.mjs
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── letters/       # Firestore CRUD
+│   │   │   ├── letters/submit/
+│   │   │   ├── moderate/      # Gemini moderation
+│   │   │   └── photos/        # Dynamic photo list
+│   │   ├── globals.css        # Design system
+│   │   ├── layout.tsx         # Root layout
+│   │   └── page.tsx           # Main orchestrator
+│   ├── components/
+│   │   ├── BackgroundMusic.tsx
+│   │   ├── CreditsSection.tsx
+│   │   ├── HeroSection.tsx
+│   │   ├── LetterSection.tsx
+│   │   ├── PolaroidWall.tsx
+│   │   └── VideoSection.tsx
+│   └── lib/
+│       └── photos-manifest.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🎨 Design System
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Color Palette:**
+- Peach: `#FFF5EE` / `#FFDAB9` / `#FFB088`
+- Gold: `#C9A96E` / `#E8D5A8`
+- Royal Red: `#B91C1C`
+- Royal Blue: `#1E3A5F`
 
-## Deploy on Vercel
+**Typography:**
+- **Playfair Display** — Royal serif for headings
+- **Dancing Script** — Vintage script for letters
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Effects:**
+- Glassmorphism with backdrop-blur
+- Porcelain texture overlays
+- Translucent nature animations
+- Theater curtain reveals
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📸 Adding Photos
+
+1. Place images in `public/photos/`
+2. Run the manifest generator:
+   ```bash
+   node scripts/generate-photos-manifest.mjs
+   ```
+3. Or manually update `src/lib/photos-manifest.json`
+
+## 🎵 Audio
+
+Replace `public/audio/song.m4a` with your preferred track. The system supports:
+- MP3, M4A, WAV formats
+- Automatic gapless looping
+- Pauses during video playback
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project on [Vercel](https://vercel.com)
+3. Add environment variables
+4. Deploy!
+
+### Other Platforms
+
+The app builds to standard Node.js. Deploy anywhere that supports Next.js.
+
+## 📝 License
+
+© 2026 SPHD Project. Built with love by [Hyperhrishi HD](https://github.com/HyperHrishi-HD).
+
+---
+
+<p align="center">
+  <em>Happy Anniversary, Mom & Dad! ♥</em><br/>
+  <small>18 Years Together — August 21, 2008 to August 21, 2026</small>
+</p>

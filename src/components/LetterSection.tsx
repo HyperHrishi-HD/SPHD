@@ -11,31 +11,17 @@ interface Letter {
   photoIndex: number;
 }
 
-// Pre-made letters from Hrishi
+// Pre-made letters from Hrishi (only the heartfelt ones)
 const PREMADE_LETTERS: Letter[] = [
   {
     id: "premade-1",
-    content:
-      "Distance has never been able to keep us apart. No matter how many miles stretch between us, the bond we share only grows stronger with each passing year. Every video call, every message, every visit — they all remind me that love knows no boundaries.",
-    author: "Hrishi",
-    photoIndex: 3,
-  },
-  {
-    id: "premade-2",
-    content:
-      "Eighteen years of togetherness. Through every challenge, every celebration, and every quiet moment in between, you two have shown me what it truly means to cherish someone. Each year together is a gift, and I'm grateful for every single one.",
-    author: "Hrishi",
-    photoIndex: 8,
-  },
-  {
-    id: "premade-3",
     content:
       "What I admire most about you both is how you've built a life full of warmth and love, no matter what life throws your way. You've taught me that family isn't just about being in the same place — it's about carrying each other in your heart always.",
     author: "Hrishi",
     photoIndex: 14,
   },
   {
-    id: "premade-4",
+    id: "premade-2",
     content:
       "Every year, no matter what happens, feels like a celebration because you two make it that way. Your love is the foundation of everything I am. Here's to many more years of laughter, adventure, and the kind of love that only gets better with time.",
     author: "Hrishi",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PHOTOS from "@/lib/photos-manifest.json";
 
@@ -19,6 +19,7 @@ const ROTATIONS = [-3, 2, -1, 3, -2, 1, -1.5, 2.5, -0.5, 1.5];
 export default function PolaroidWall() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
+  const [pausedRows, setPausedRows] = useState<Set<number>>(new Set());
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +50,20 @@ export default function PolaroidWall() {
     setLightboxIndex((lightboxIndex + 1) % PHOTOS.length);
   };
 
+  // Click to pause/resume a specific row
+  const toggleRowPause = useCallback((rowIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPausedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowIndex)) {
+        next.delete(rowIndex);
+      } else {
+        next.add(rowIndex);
+      }
+      return next;
+    });
+  }, []);
+
   // Keyboard navigation for lightbox
   useEffect(() => {
     if (lightboxIndex === null) return;
@@ -60,6 +75,21 @@ export default function PolaroidWall() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [lightboxIndex]);
+
+  // Format date for display
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <section ref={sectionRef} className="relative py-16 md:py-24">
@@ -90,9 +120,15 @@ export default function PolaroidWall() {
         {rows.map((row, rowIndex) => (
           <div
             key={rowIndex}
-            className="relative overflow-hidden"
+            className="relative overflow-hidden cursor-pointer"
+            onClick={(e) => toggleRowPause(rowIndex, e)}
           >
-            <div className={`conveyor-row ${directions[rowIndex]}`}>
+            <div
+              className={`conveyor-row ${directions[rowIndex]}`}
+              style={{
+                animationPlayState: pausedRows.has(rowIndex) ? "paused" : "running",
+              }}
+            >
               {/* Duplicate row for seamless loop */}
               {[...row, ...row].map((photo, idx) => {
                 const originalIndex = idx % row.length;
@@ -103,6 +139,8 @@ export default function PolaroidWall() {
                     ? rows[0].length + originalIndex
                     : rows[0].length + rows[1].length + originalIndex;
 
+                const photoDate = formatDate(photo.date);
+
                 return (
                   <div
                     key={`${rowIndex}-${idx}`}
@@ -110,9 +148,10 @@ export default function PolaroidWall() {
                     style={{
                       ["--rotate" as string]: `${ROTATIONS[originalIndex % ROTATIONS.length]}deg`,
                     }}
-                    onClick={() =>
-                      setLightboxIndex(globalIndex % PHOTOS.length)
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxIndex(globalIndex % PHOTOS.length);
+                    }}
                   >
                     <div className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] overflow-hidden bg-peach-light/50">
                       <img
@@ -134,16 +173,39 @@ export default function PolaroidWall() {
                         }}
                       />
                     </div>
-                    <p
-                      className="text-center text-[10px] md:text-xs text-gray-400 mt-2 tracking-wider"
-                      style={{ fontFamily: "monospace" }}
-                    >
-                      {String((globalIndex % PHOTOS.length) + 1).padStart(2, "0")}/{String(PHOTOS.length).padStart(2, "0")}
-                    </p>
+                    <div className="flex items-center justify-between px-1 mt-2">
+                      <p
+                        className="text-[10px] md:text-xs text-gray-400 tracking-wider"
+                        style={{ fontFamily: "monospace" }}
+                      >
+                        {String((globalIndex % PHOTOS.length) + 1).padStart(2, "0")}/{String(PHOTOS.length).padStart(2, "0")}
+                      </p>
+                      {photoDate && (
+                        <p
+                          className="text-[9px] md:text-[10px] text-gray-400 tracking-wider"
+                          style={{ fontFamily: "var(--font-dancing)" }}
+                        >
+                          {photoDate}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Pause indicator */}
+            {pausedRows.has(rowIndex) && (
+              <motion.div
+                className="absolute top-2 right-4 text-gold/40 text-xs tracking-wider z-20"
+                style={{ fontFamily: "var(--font-playfair)" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                click to resume
+              </motion.div>
+            )}
           </div>
         ))}
       </div>
@@ -208,9 +270,16 @@ export default function PolaroidWall() {
               />
             </AnimatePresence>
 
-            {/* Counter */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-sm tracking-widest z-50">
-              {lightboxIndex + 1} / {PHOTOS.length}
+            {/* Counter and date */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center z-50">
+              <div className="text-white/50 text-sm tracking-widest">
+                {lightboxIndex + 1} / {PHOTOS.length}
+              </div>
+              {PHOTOS[lightboxIndex].date && (
+                <div className="text-white/30 text-xs tracking-wider mt-1" style={{ fontFamily: "var(--font-dancing)" }}>
+                  {formatDate(PHOTOS[lightboxIndex].date)}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -31,20 +31,46 @@ export async function POST(request: Request) {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `You are a content moderator for a family anniversary website. Analyze the following letter/text for appropriateness.
+    const prompt = `You are a content moderator for a family anniversary website celebrating 18 years of marriage between Swapna and Praveen.
 
-Rules:
-- The text should be a heartfelt message for a wedding anniversary
-- It should NOT contain: profanity, hate speech, threats, spam, links, or inappropriate content
-- It should be respectful and family-friendly
-- Minor sentiment and emotion is perfectly fine
+TASK: Determine if the following message is appropriate for this family celebration.
 
-Text to analyze: "${content}"
+RULES FOR APPROVAL (isSafe: true):
+- Heartfelt wishes, congratulations, love, warmth, celebration
+- Personal memories, stories, anecdotes about the couple
+- Emotional expressions (love, gratitude, admiration, nostalgia)
+- Positive humor and inside jokes
+- Simple "Happy Anniversary" or similar greetings
+- Any message that feels genuine and kind, even if imperfect
 
-Return ONLY a JSON object (no markdown, no code fences) with exactly these fields:
-{"isSafe": boolean, "reason": "brief explanation"}`;
+RULES FOR REJECTION (isSafe: false):
+- Profanity, vulgar language, or sexual content
+- Hate speech, discrimination, or offensive slurs
+- Threats, violence, or harmful intentions
+- Spam, advertisements, or unrelated commercial content
+- Solicitation of personal information or links to external sites
+- Harassment, bullying, or mean-spirited comments
+- Political propaganda or controversial divisive content
+- Messages that are clearly not anniversary-related
+
+IMPORTANT GUIDELINES:
+- Be LENIENT — this is a celebration, not a formal document
+- Accept casual language, slang, and informal expressions
+- Accept messages in ANY language (not just English)
+- Accept short messages like "Happy Anniversary!" or "Love you both!"
+- Accept messages with minor grammar/spelling errors
+- Only REJECT if the message is clearly inappropriate or harmful
+
+RESPONSE FORMAT:
+Return ONLY a valid JSON object with exactly these fields:
+{"isSafe": boolean, "reason": "brief explanation (max 50 words)"}
+
+Do NOT include any other text, markdown, or code fences. Just the raw JSON.
+
+Message to moderate:
+"${content}"`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -60,7 +86,18 @@ Return ONLY a JSON object (no markdown, no code fences) with exactly these field
         reason: String(parsed.reason || ""),
       });
     } catch {
-      // If parsing fails, default to safe
+      // If parsing fails, check if the response contains "isSafe": false
+      // This handles cases where Gemini adds extra text around the JSON
+      const isSafeMatch = text.match(/"isSafe"\s*:\s*(true|false)/i);
+      if (isSafeMatch) {
+        const isSafe = isSafeMatch[1].toLowerCase() === "true";
+        const reasonMatch = text.match(/"reason"\s*:\s*"([^"]*)"/i);
+        return NextResponse.json({
+          isSafe,
+          reason: reasonMatch?.[1] || "Content moderation completed",
+        });
+      }
+      // If we still can't parse, default to safe
       return NextResponse.json({
         isSafe: true,
         reason: "Analysis inconclusive, auto-approved",

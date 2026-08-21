@@ -243,10 +243,7 @@ body {
   100% { transform: translateX(0); }
 }
 
-/* Pause on hover */
-.conveyor-row:hover {
-  animation-play-state: paused;
-}
+/* Pause on click (handled via inline style) */
 
 /* ─── Polaroid Card ─── */
 .polaroid {
