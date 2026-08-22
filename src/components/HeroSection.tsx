@@ -326,36 +326,7 @@ export default function HeroSection() {
 
       {mounted && clouds.map((cloud, index) => <Cloud key={`cloud-${index}`} {...cloud} />)}
 
-      <motion.div
-        className="hero-side-tree hero-side-tree-left"
-        initial={{ opacity: 0, x: -36 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1.8, delay: 0.35 }}
-        aria-hidden="true"
-      >
-        <motion.div
-          animate={shouldReduceMotion ? {} : { rotate: [0, 1.2, -0.8, 0.5, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          style={{ transformOrigin: "bottom center" }}
-        >
-          <svg viewBox="0 0 200 300" className="h-full w-full">
-            <g fill="none" stroke="#2D5016" strokeWidth="1.5">
-              <path d="M100 300 L100 180 Q95 160 85 150 M100 180 Q105 160 115 150" />
-              <path d="M100 200 Q70 180 50 160 M100 180 Q65 155 40 140 M100 160 Q75 140 55 120" />
-              <path d="M100 200 Q130 180 150 160 M100 180 Q135 155 160 140 M100 160 Q125 140 145 120" />
-              <ellipse cx="50" cy="155" rx="25" ry="18" fill="#2D5016" opacity="0.3" />
-              <ellipse cx="40" cy="135" rx="20" ry="15" fill="#3A6B1E" opacity="0.25" />
-              <ellipse cx="55" cy="115" rx="18" ry="14" fill="#4A8C2A" opacity="0.2" />
-              <ellipse cx="150" cy="155" rx="25" ry="18" fill="#2D5016" opacity="0.3" />
-              <ellipse cx="160" cy="135" rx="20" ry="15" fill="#3A6B1E" opacity="0.25" />
-              <ellipse cx="145" cy="115" rx="18" ry="14" fill="#4A8C2A" opacity="0.2" />
-              <ellipse cx="100" cy="100" rx="40" ry="30" fill="#2D5016" opacity="0.2" />
-              <ellipse cx="85" cy="85" rx="25" ry="20" fill="#3A6B1E" opacity="0.15" />
-              <ellipse cx="115" cy="85" rx="25" ry="20" fill="#3A6B1E" opacity="0.15" />
-            </g>
-          </svg>
-        </motion.div>
-      </motion.div>
+
 
       <motion.div
         className="hero-side-tree hero-side-tree-right"

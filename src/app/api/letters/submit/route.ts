@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { Timestamp } from "firebase-admin/firestore";
-import { getAdminFirestore } from "@/lib/firebase-admin";
+import { readLettersFromGitHub, writeLettersToGitHub, type Letter } from "@/lib/github-letters";
 
 export const runtime = "nodejs";
 
@@ -35,26 +34,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getAdminFirestore();
-    const docRef = await db.collection("letters").add({
-      content,
-      author,
-      createdAt: Timestamp.now(),
-    });
+    // Read existing letters
+    const { letters: existingLetters, sha } = await readLettersFromGitHub();
+
+    // Create new letter
+    const newLetter: Letter = {
+      id: `letter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      content: content.trim(),
+      author: author.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    // Append and write back
+    const updatedLetters = [newLetter, ...existingLetters];
+    const writeSuccess = await writeLettersToGitHub(updatedLetters, sha);
+
+    if (!writeSuccess) {
+      return NextResponse.json(
+        { error: "Your letter could not be saved. Please try again." },
+        { status: 503, headers: noStoreHeaders }
+      );
+    }
 
     return NextResponse.json(
       {
-        id: docRef.id,
-        letter: {
-          id: docRef.id,
-          content,
-          author,
-        },
+        id: newLetter.id,
+        letter: newLetter,
       },
       { status: 201, headers: noStoreHeaders }
     );
   } catch (error) {
-    console.error("Unable to save shared letter:", error instanceof Error ? error.message : "unknown error");
+    console.error("Unable to save letter:", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json(
       { error: "Your letter could not be saved. Please try again." },
       { status: 503, headers: noStoreHeaders }

@@ -142,7 +142,7 @@ textarea:focus-visible {
   inset: 0;
   background-repeat: no-repeat;
   background-size: cover;
-  background-position: center 50%;
+  background-position: center 38%;
   background-color: #f5dfd0;
   opacity: 0.36;
   filter: blur(2px) saturate(0.62);
@@ -286,11 +286,7 @@ textarea:focus-visible {
 }
 
 .hero-side-tree-left {
-  bottom: 5.8rem;
-  left: max(-2rem, -1vw);
-  width: clamp(12rem, 25vw, 22rem);
-  height: clamp(18rem, 46vh, 32rem);
-  opacity: 0.16;
+  display: none;
 }
 
 .hero-side-tree-right {
@@ -552,6 +548,9 @@ textarea:focus-visible {
   isolation: isolate;
   overflow: visible;
   background: linear-gradient(180deg, #fff5ee 0%, #fff8f2 100%);
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
 }
 
 .photo-wall-belt-stack {
@@ -704,6 +703,9 @@ textarea:focus-visible {
   overflow: visible;
   isolation: isolate;
   background: linear-gradient(180deg, #fff8f2 0%, #fff5ee 100%);
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 700px;
 }
 
 .letter-section-shell {
@@ -1102,6 +1104,7 @@ textarea:focus-visible {
   width: 100%;
   overflow: hidden;
   background: #1a0f05;
+  contain: layout style;
 }
 
 .credits-shell {
@@ -1130,13 +1133,13 @@ textarea:focus-visible {
 /* ─── Responsive layout ─── */
 @media (min-width: 769px) and (orientation: landscape) {
   .hero-bg-photo {
-    background-position: center 25%;
+    background-position: center 22%;
   }
 }
 
 @media (min-width: 1440px) {
   .hero-bg-photo {
-    background-position: center 21%;
+    background-position: center 18%;
   }
 }
 
@@ -1314,4 +1317,43 @@ textarea:focus-visible {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gold);
+}
+
+/* ─── Performance: GPU compositing for animated elements ─── */
+.hero-shape,
+.hero-top-cloud,
+.hero-floating-leaf,
+.hero-floating-blossom,
+.hero-clipart-car,
+.hero-road-tree,
+.hero-road-grass-tuft,
+.conveyor-row,
+.cloud-layer {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.hero-section {
+  contain: layout style;
+}
+
+/* Reduce animation work on low-end devices */
+.hero-section-low-end .hero-shape,
+.hero-section-low-end .hero-top-cloud,
+.hero-section-low-end .hero-distant-tree {
+  animation: none !important;
+}
+
+.hero-section-low-end .hero-floating-leaf,
+.hero-section-low-end .hero-floating-blossom {
+  opacity: 0.4 !important;
+}
+
+/* Prevent flickering on image load */
+.photo-wall-image {
+  will-change: opacity;
+}
+
+.polaroid {
+  contain: layout style paint;
 }
