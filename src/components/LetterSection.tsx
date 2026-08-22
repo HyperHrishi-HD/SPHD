@@ -100,12 +100,22 @@ export default function LetterSection() {
 
         if (data.configured === false) {
           if (active) setStorageAvailable(false);
+          // Keep locally cached letters — do not wipe them when GitHub is off.
           return;
         }
 
-        const serverLetters = Array.isArray(data.letters) ? data.letters.filter(isLetter) : [];
+        const serverLetters: Letter[] = Array.isArray(data.letters) ? data.letters.filter(isLetter) : [];
         if (active) {
-          const nextLetters = withPremadeLetter(serverLetters);
+          // Merge server letters with any locally cached ones, server wins on id.
+          const merged = [...serverLetters];
+          const seen = new Set(serverLetters.map((letter: Letter) => letter.id));
+          for (const cached of cachedLetters) {
+            if (!seen.has(cached.id)) {
+              merged.push(cached);
+              seen.add(cached.id);
+            }
+          }
+          const nextLetters = withPremadeLetter(merged);
           setLetters(nextLetters);
           saveCachedLetters(nextLetters);
           setStorageAvailable(true);
@@ -157,6 +167,20 @@ export default function LetterSection() {
       return;
     }
 
+    // Build the letter locally first so it is ALWAYS saved, no matter what
+    // the server does. localStorage keeps it across refreshes.
+    const localLetter: Letter = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      content: content.trim(),
+      author: author.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const nextLetters = withPremadeLetter([...letters, localLetter]);
+    setLetters(nextLetters);
+    saveCachedLetters(nextLetters);
+    setStorageAvailable(true);
+
     setIsSubmitting(true);
     setIsRolling(true);
     setSubmitMessage("");
@@ -169,29 +193,30 @@ export default function LetterSection() {
       });
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok || !data.id) {
-        throw new Error(data.error || "Your letter could not be saved. Please try again.");
+      if (response.ok && data.id) {
+        const savedLetter: Letter = {
+          id: data.id,
+          content: typeof data.letter?.content === "string" ? data.letter.content : content,
+          author: typeof data.letter?.author === "string" ? data.letter.author : author,
+          createdAt: typeof data.letter?.createdAt === "string" ? data.letter.createdAt : localLetter.createdAt,
+        };
+        // Replace the local id with the server-confirmed id.
+        const merged = withPremadeLetter([savedLetter, ...userLettersOnly(letters)]);
+        setLetters(merged);
+        saveCachedLetters(merged);
       }
 
-      const savedLetter: Letter = {
-        id: data.id,
-        content: typeof data.letter?.content === "string" ? data.letter.content : content,
-        author: typeof data.letter?.author === "string" ? data.letter.author : author,
-        createdAt: typeof data.letter?.createdAt === "string" ? data.letter.createdAt : undefined,
-      };
-
-      const nextLetters = withPremadeLetter([...letters, savedLetter]);
-      setLetters(nextLetters);
-      saveCachedLetters(nextLetters);
-      setStorageAvailable(true);
-
-      // Let the full manuscript roll finish even when Firebase responds quickly.
+      // Let the full manuscript roll finish even when the server responds quickly.
       await wait(MANUSCRIPT_ROLL_MS);
       setLetterContent("");
       setLetterAuthor("");
       setSubmitMessage("Your letter has been sent! ♥");
-    } catch (error) {
-      setSubmitMessage(error instanceof Error ? error.message : "Your letter could not be saved. Please try again.");
+    } catch {
+      // The letter is already saved locally — surface a soft message, not an error.
+      await wait(MANUSCRIPT_ROLL_MS);
+      setLetterContent("");
+      setLetterAuthor("");
+      setSubmitMessage("Your letter is saved on this device ♥");
     } finally {
       setIsRolling(false);
       setIsSubmitting(false);

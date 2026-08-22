@@ -141,12 +141,11 @@ textarea:focus-visible {
   z-index: 0;
   inset: 0;
   background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center 38%;
+  background-size: contain;
+  background-position: center;
   background-color: #f5dfd0;
   opacity: 0.36;
   filter: blur(2px) saturate(0.62);
-  transform: scale(1.025);
 }
 
 .hero-photo-wash {
@@ -532,6 +531,7 @@ textarea:focus-visible {
   height: clamp(13rem, 32vh, 20rem);
   background: rgba(255, 245, 238, 0.58);
   clip-path: ellipse(70% 100% at 50% 100%);
+  opacity: 0.1;
 }
 
 .curved-layer-1 {
@@ -540,6 +540,7 @@ textarea:focus-visible {
   height: clamp(12rem, 29vh, 18rem);
   background: linear-gradient(180deg, rgba(255, 249, 245, 0.82), rgba(255, 245, 238, 0.98));
   clip-path: ellipse(70% 100% at 50% 100%);
+  opacity: 0.1;
 }
 
 /* ─── Photo wall ─── */
@@ -1133,19 +1134,19 @@ textarea:focus-visible {
 /* ─── Responsive layout ─── */
 @media (min-width: 769px) and (orientation: landscape) {
   .hero-bg-photo {
-    background-position: center 22%;
+    background-position: center;
   }
 }
 
 @media (min-width: 1440px) {
   .hero-bg-photo {
-    background-position: center 18%;
+    background-position: center;
   }
 }
 
 @media (max-width: 768px) {
   .hero-bg-photo {
-    background-position: center 50%;
+    background-position: center;
     filter: blur(1.5px) saturate(0.62);
   }
 

@@ -34,10 +34,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Read existing letters
-    const { letters: existingLetters, sha } = await readLettersFromGitHub();
-
-    // Create new letter
+    // Create the letter object first — it always exists locally, even if
+    // GitHub sync is not configured on the server.
     const newLetter: Letter = {
       id: `letter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       content: content.trim(),
@@ -45,21 +43,22 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    // Append and write back
+    // Attempt GitHub persistence (best-effort). The letter is still valid
+    // locally even when the write fails (e.g. missing GITHUB_TOKEN).
+    const { letters: existingLetters, sha, configured } = await readLettersFromGitHub();
     const updatedLetters = [newLetter, ...existingLetters];
-    const writeSuccess = await writeLettersToGitHub(updatedLetters, sha);
+    let persisted = false;
 
-    if (!writeSuccess) {
-      return NextResponse.json(
-        { error: "Your letter could not be saved. Please try again." },
-        { status: 503, headers: noStoreHeaders }
-      );
+    if (configured) {
+      persisted = await writeLettersToGitHub(updatedLetters, sha);
     }
 
     return NextResponse.json(
       {
         id: newLetter.id,
         letter: newLetter,
+        persisted,
+        configured,
       },
       { status: 201, headers: noStoreHeaders }
     );
