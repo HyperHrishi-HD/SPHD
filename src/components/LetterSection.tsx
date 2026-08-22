@@ -79,7 +79,6 @@ export default function LetterSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
-  const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const photoCycleRef = useRef(0);
@@ -99,7 +98,6 @@ export default function LetterSection() {
         if (!response.ok) throw new Error(data.error || "Shared letters are unavailable.");
 
         if (data.configured === false) {
-          if (active) setStorageAvailable(false);
           // Keep locally cached letters — do not wipe them when GitHub is off.
           return;
         }
@@ -118,10 +116,9 @@ export default function LetterSection() {
           const nextLetters = withPremadeLetter(merged);
           setLetters(nextLetters);
           saveCachedLetters(nextLetters);
-          setStorageAvailable(true);
         }
       } catch {
-        if (active) setStorageAvailable(false);
+        // Keep whatever letters are cached locally; the page still works.
       }
     };
 
@@ -179,7 +176,6 @@ export default function LetterSection() {
     const nextLetters = withPremadeLetter([...letters, localLetter]);
     setLetters(nextLetters);
     saveCachedLetters(nextLetters);
-    setStorageAvailable(true);
 
     setIsSubmitting(true);
     setIsRolling(true);
@@ -309,11 +305,6 @@ export default function LetterSection() {
           )}
         </AnimatePresence>
 
-        {storageAvailable === false && (
-          <p className="letter-storage-hint" role="status">
-            Shared letters are temporarily unavailable. Please try sending again in a moment.
-          </p>
-        )}
 
         <motion.div
           className="honeycomb-grid"
