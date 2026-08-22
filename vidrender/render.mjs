@@ -8,7 +8,7 @@ import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FPS = 30;
+const FPS = 60;
 const TOTAL_MS = 43000;
 const FRAME_COUNT = Math.round((TOTAL_MS / 1000) * FPS); // 1290 frames
 
