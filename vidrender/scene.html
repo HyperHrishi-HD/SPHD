@@ -29,24 +29,17 @@ body {
   position: absolute; border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(255,245,238,0.13) 0%, transparent 70%);
   filter: blur(28px);
-  animation: cloudDrift linear infinite;
+  will-change: transform;
 }
-@keyframes cloudDrift {
-  0%   { transform: translateX(-40%); }
-  100% { transform: translateX(160vw); }
-}
-
 .leaf {
-  position: absolute; top: -30px;
+  position: absolute; top: 0; left: 0;
   border-radius: 0 50% 50% 50%;
-  transform: rotate(45deg);
-  animation: leafFall linear infinite;
+  will-change: transform, opacity;
 }
-@keyframes leafFall {
-  0%   { transform: translateY(-30px) rotate(45deg) translateX(0); opacity: 0; }
-  8%   { opacity: var(--o); }
-  88%  { opacity: var(--o); }
-  100% { transform: translateY(132vh) rotate(405deg) translateX(70px); opacity: 0; }
+.leaf i {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  display: block;
 }
 
 .vignette {
@@ -74,11 +67,6 @@ body {
   background-size: 220% 220%;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shimmer 5s ease-in-out infinite;
-}
-@keyframes shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
 }
 .hero h2 {
   margin-top: 26px;
@@ -113,7 +101,6 @@ body {
   padding: 16px 16px 18px;
   box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 4px 14px rgba(0,0,0,0.35);
   will-change: transform;
-  animation: sway 7s ease-in-out infinite alternate;
 }
 .card:nth-child(odd)  { align-self: flex-start; margin-left: 46px; }
 .card:nth-child(even) { align-self: flex-end; margin-right: 46px; }
@@ -121,10 +108,6 @@ body {
   display: block; width: 100%; aspect-ratio: 1 / 1;
   object-fit: cover;
   filter: saturate(1.04) contrast(1.02);
-}
-@keyframes sway {
-  from { transform: rotate(var(--r)) translateY(0); }
-  to   { transform: rotate(calc(var(--r) * -1)) translateY(-10px); }
 }
 
 .end-space {
@@ -135,18 +118,14 @@ body {
 .end-glow {
   width: 130px; height: 130px; border-radius: 50%;
   background: radial-gradient(circle at center, rgba(255,190,140,0.35) 0%, rgba(192,57,43,0.15) 45%, transparent 70%);
-  animation: glowPulse 4s ease-in-out infinite;
-}
-@keyframes glowPulse {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50%      { transform: scale(1.18); opacity: 1; }
+  will-change: transform, opacity;
 }
 </style>
 </head>
 <body>
 
 <div class="hero">
-  <h1>Happy Anniversary<br>Mom &amp; Dad</h1>
+  <h1 id="shimmer">Happy Anniversary<br>Mom &amp; Dad</h1>
   <div class="rule"></div>
   <h2>August 21, 2026</h2>
   <div class="date">EIGHTEEN YEARS</div>
@@ -155,12 +134,17 @@ body {
 
 <div class="wall" id="wall"></div>
 
-<div class="end-space"><div class="end-glow"></div></div>
+<div class="end-space"><div class="end-glow" id="glow"></div></div>
 
 <div class="fx" id="fx"></div>
 <div class="vignette"></div>
 
 <script>
+// ── Timeline constants (must match renderer) ──
+const HOLD  = 5500;   // ms held on hero before scrolling
+const TOTAL = 43000;  // total scene duration in ms
+const FPS   = 30;
+
 const PHOTOS = [
   "FB_IMG_1471918819858.jpg","IMG_0376.JPG","IMG_0495.JPG","IMG_0586.JPG",
   "IMG_1349.JPG","IMG_1982.JPG","IMG_2116.JPG","IMG_2831.JPG",
@@ -169,15 +153,22 @@ const PHOTOS = [
   "IMG-20240513-WA0001.jpg","IMG20210821214126.jpg"
 ];
 
-// ── Polaroids ──
+const VW = 720, VH = 1280;
+
+// ── Build polaroids ──
+const cardEls = [];
 (function() {
   const wall = document.getElementById('wall');
   PHOTOS.forEach(function(name, i) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.setProperty('--r', ((i % 2 === 0 ? -1 : 1) * (1.2 + (i % 3) * 0.7)).toFixed(2) + 'deg');
-    card.style.animationDelay = (-(i * 0.9)).toFixed(2) + 's';
-    card.style.animationDuration = (6.5 + (i % 4) * 0.8).toFixed(1) + 's';
+    const r = (i % 2 === 0 ? -1 : 1) * (1.2 + (i % 3) * 0.7);
+    cardEls.push({
+      el: card,
+      r: r,
+      dur: 6.5 + (i % 4) * 0.8,          // seconds per sway cycle
+      phase: i * 0.9,                    // seconds offset
+    });
     const img = document.createElement('img');
     img.src = '../public/photos/' + encodeURIComponent(name);
     img.alt = '';
@@ -187,7 +178,8 @@ const PHOTOS = [
   });
 })();
 
-// ── Clouds ──
+// ── Build clouds ──
+const cloudEls = [];
 (function() {
   const fx = document.getElementById('fx');
   for (let i = 0; i < 9; i++) {
@@ -199,14 +191,14 @@ const PHOTOS = [
       width: w + 'px',
       height: (w * 0.34) + 'px',
       opacity: String(0.05 + (i % 3) * 0.025),
-      animationDelay: (-(i * 4)) + 's',
-      animationDuration: (30 + (i % 3) * 14) + 's',
     });
     fx.appendChild(el);
+    cloudEls.push({ el: el, w: w, dur: 30 + (i % 3) * 14, delay: i * 4 });
   }
 })();
 
-// ── Leaves ──
+// ── Build leaves ──
+const leafEls = [];
 (function() {
   const fx = document.getElementById('fx');
   const hues = [35, 28, 42, 20];
@@ -214,44 +206,94 @@ const PHOTOS = [
     const el = document.createElement('div');
     el.className = 'leaf';
     const size = 13 + (i % 4) * 6;
-    const o = (0.28 + (i % 4) * 0.09).toFixed(2);
-    el.style.setProperty('--o', o);
+    const inner = document.createElement('i');
+    inner.style.background = 'hsl(' + hues[i % 4] + ',52%,52%)';
+    el.appendChild(inner);
     Object.assign(el.style, {
-      left: ((i * 3.9 + 1.4) % 96) + '%',
       width: size + 'px',
       height: Math.round(size * 1.3) + 'px',
-      background: 'hsl(' + hues[i % 4] + ',52%,52%)',
-      animationDelay: (-(i * 1.63) % 9).toFixed(2) + 's',
-      animationDuration: (7 + (i % 5) * 1.6) + 's',
     });
     fx.appendChild(el);
+    leafEls.push({
+      el: el,
+      x0: ((i * 3.9 + 1.4) % 96) / 100 * VW,     // base x px
+      o: 0.28 + (i % 4) * 0.09,                 // base opacity
+      dur: 7 + (i % 5) * 1.6,                   // seconds per fall
+      delay: (i * 1.63) % 9,                    // seconds offset
+      wob: (i % 3) + 1,                         // horizontal wobble freq
+      ph: i * 1.1,
+    });
   }
 })();
 
-// ── Slow auto-scroll timeline ──
-// 0–5.5s hold on hero, then a continuous gentle glide to the end.
-(function() {
-  const HOLD = 5500;
-  const TOTAL = 43000; // must match renderer duration
-  const TAIL = 3500;   // ease-out settle at the bottom
-  const start = performance.now();
+const glowEl = document.getElementById('glow');
+const shimmerEl = document.getElementById('shimmer');
 
-  function maxScroll() {
-    return document.documentElement.scrollHeight - window.innerHeight;
+let maxScroll = 0;
+function computeLayout() {
+  maxScroll = document.documentElement.scrollHeight - VH;
+}
+
+// ── Deterministic clock: renderer calls this once per frame ──
+window.__setTime = function(tms) {
+  const t = tms / 1000;
+
+  // Scroll (smoothstep ease-in-out)
+  if (tms > HOLD) {
+    const p = Math.min(1, (tms - HOLD) / (TOTAL - HOLD));
+    const e = p * p * (3 - 2 * p);
+    window.scrollTo(0, e * maxScroll);
   }
 
-  function tick() {
-    const t = performance.now() - start;
-    if (t > HOLD) {
-      let p = Math.min(1, (t - HOLD) / (TOTAL - HOLD));
-      // smoothstep ease-in-out so it starts and settles softly
-      const e = p * p * (3 - 2 * p);
-      window.scrollTo(0, e * maxScroll());
-    }
-    requestAnimationFrame(tick);
+  // Hero shimmer
+  const sh = 50 - 50 * Math.cos(2 * Math.PI * t / 5);
+  shimmerEl.style.backgroundPosition = sh.toFixed(2) + '% 50%';
+
+  // Clouds
+  for (let i = 0; i < cloudEls.length; i++) {
+    const c = cloudEls[i];
+    const pr = (((t + c.delay) % c.dur) / c.dur);
+    const x = -0.5 * c.w + pr * (VW + c.w);
+    c.el.style.transform = 'translateX(' + x.toFixed(1) + 'px)';
   }
-  requestAnimationFrame(tick);
-})();
+
+  // Leaves
+  for (let i = 0; i < leafEls.length; i++) {
+    const L = leafEls[i];
+    const pr = (((t + L.delay) % L.dur) / L.dur);
+    const y = -40 + pr * (VH + 90);
+    const x = L.x0 + 70 * pr + Math.sin(pr * Math.PI * 2 * L.wob + L.ph) * 30;
+    const rot = 45 + 400 * pr;
+    const fade = Math.min(1, pr * 10) * Math.min(1, (1 - pr) * 9);
+    L.el.style.transform =
+      'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) rotate(' + rot.toFixed(1) + 'deg)';
+    L.el.style.opacity = (L.o * fade).toFixed(3);
+  }
+
+  // Polaroid sway
+  for (let i = 0; i < cardEls.length; i++) {
+    const c = cardEls[i];
+    const a = 2 * Math.PI * (t / c.dur) + c.phase;
+    const ang = c.r * Math.sin(a);
+    const ty = -10 * (0.5 - 0.5 * Math.cos(a));
+    c.el.style.transform = 'rotate(' + ang.toFixed(3) + 'deg) translateY(' + ty.toFixed(2) + 'px)';
+  }
+
+  // End glow pulse
+  const g = 0.5 - 0.5 * Math.cos(2 * Math.PI * t / 4);
+  glowEl.style.transform = 'scale(' + (1 + 0.18 * g).toFixed(3) + ')';
+  glowEl.style.opacity = (0.85 + 0.15 * g).toFixed(3);
+};
+
+window.__ready = function() {
+  return document.fonts.status === 'loaded' &&
+    Array.from(document.images).every(function(im) { return im.complete && im.naturalWidth > 0; });
+};
+
+window.__init = function() {
+  computeLayout();
+  window.__setTime(0);
+};
 </script>
 </body>
 </html>
