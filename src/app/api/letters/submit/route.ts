@@ -45,12 +45,19 @@ export async function POST(request: Request) {
 
     // Attempt GitHub persistence (best-effort). The letter is still valid
     // locally even when the write fails (e.g. missing GITHUB_TOKEN).
-    const { letters: existingLetters, sha, configured } = await readLettersFromGitHub();
-    const updatedLetters = [newLetter, ...existingLetters];
+    // Retry up to 3 times so simultaneous submissions (two guests sending
+    // at once) don't collide on a stale file SHA.
     let persisted = false;
+    let configured = false;
 
-    if (configured) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { letters: existingLetters, sha, configured: isConfigured } = await readLettersFromGitHub();
+      configured = isConfigured;
+      if (!isConfigured) break;
+
+      const updatedLetters = [newLetter, ...existingLetters];
       persisted = await writeLettersToGitHub(updatedLetters, sha);
+      if (persisted) break;
     }
 
     return NextResponse.json(
