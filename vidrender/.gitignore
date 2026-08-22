@@ -1,0 +1,4 @@
+node_modules/
+.rec/
+ffmpeg-bin
+render.log
