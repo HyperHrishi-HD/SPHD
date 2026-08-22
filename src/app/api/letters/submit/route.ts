@@ -1,65 +1,63 @@
 import { NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+
+export const runtime = "nodejs";
+
+const MAX_LETTER_CHARACTERS = 1000;
+const noStoreHeaders = { "Cache-Control": "no-store, max-age=0" };
 
 export async function POST(request: Request) {
   try {
-    const { content, author } = await request.json();
+    const body: unknown = await request.json();
+    const payload = body && typeof body === "object" ? body as { content?: unknown; author?: unknown } : {};
+    const content = payload.content;
+    const author = payload.author;
 
-    if (!content || !author) {
+    if (typeof content !== "string" || typeof author !== "string" || !content.trim() || !author.trim()) {
       return NextResponse.json(
-        { error: "Content and author are required" },
-        { status: 400 }
+        { error: "A letter and your name are required." },
+        { status: 400, headers: noStoreHeaders }
       );
     }
 
-    if (typeof content !== "string" || content.length > 500) {
+    if (content.length > MAX_LETTER_CHARACTERS) {
       return NextResponse.json(
-        { error: "Content must be a string under 500 characters" },
-        { status: 400 }
+        { error: `Letters must be ${MAX_LETTER_CHARACTERS} characters or fewer.` },
+        { status: 400, headers: noStoreHeaders }
       );
     }
 
-    if (typeof author !== "string" || author.length > 100) {
+    if (author.length > 100) {
       return NextResponse.json(
-        { error: "Author name must be under 100 characters" },
-        { status: 400 }
+        { error: "Names must be 100 characters or fewer." },
+        { status: 400, headers: noStoreHeaders }
       );
     }
 
-    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY) {
-      return NextResponse.json({
-        id: `local-${Date.now()}`,
-        message: "Letter saved locally (Firebase not configured)",
-      });
-    }
-
-    if (!getApps().length) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-        }),
-      });
-    }
-
-    const db = getFirestore();
-
+    const db = getAdminFirestore();
     const docRef = await db.collection("letters").add({
       content,
       author,
-      approved: true,
-      photoIndex: Math.floor(Math.random() * 25) + 1,
-      createdAt: new Date(),
+      createdAt: Timestamp.now(),
     });
 
-    return NextResponse.json({ id: docRef.id });
-  } catch (error) {
-    console.error("Error submitting letter:", error);
     return NextResponse.json(
-      { error: "Failed to submit letter" },
-      { status: 500 }
+      {
+        id: docRef.id,
+        letter: {
+          id: docRef.id,
+          content,
+          author,
+        },
+      },
+      { status: 201, headers: noStoreHeaders }
+    );
+  } catch (error) {
+    console.error("Unable to save shared letter:", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json(
+      { error: "Your letter could not be saved. Please try again." },
+      { status: 503, headers: noStoreHeaders }
     );
   }
 }

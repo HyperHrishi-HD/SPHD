@@ -1,308 +1,324 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PHOTOS from "@/lib/photos-manifest.json";
 
-interface Letter {
+const MAX_LETTER_CHARACTERS = 1000;
+const LETTERS_STORAGE_KEY = "sphd-letters-cache-v3";
+const MANUSCRIPT_ROLL_MS = 1200;
+
+type Letter = {
   id: string;
   content: string;
   author: string;
-  photoIndex: number;
-}
+  createdAt?: string;
+};
 
-// Pre-made letters from Hrishi
 const PREMADE_LETTERS: Letter[] = [
   {
-    id: "premade-1",
+    id: "premade-hrishi",
     content:
-      "18 years?? yall are literally goals. the way you two are still so annoyingly in love after all this time is honestly insane. love you both so much, Happy Anniversary Mom & Dad!!",
+      "Happy anniversary amma and daddy! I hope you have an amazing year!\n\nWe are finally celebrating together after so long. It means the world to me that we can cherish these moments we have, so I made you guys this website.\n\nSo I promise to make you guys proud, work my best in life, and enjoy every moment with you two. I am so grateful for the best parents. I love you both so much!\n\n— your loving son",
     author: "Hrishi",
-    photoIndex: 14,
-  },
-  {
-    id: "premade-2",
-    content:
-      "thank you for always being there no matter what. you guys are my whole world and i cant imagine life without you. cheers to 18 more years fr 💛",
-    author: "Hrishi",
-    photoIndex: 20,
   },
 ];
 
-const LETTERS_STORAGE_KEY = "sphd-letters-v2";
+function isLetter(value: unknown): value is Letter {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<Letter>;
+  return typeof candidate.id === "string" && typeof candidate.content === "string" && typeof candidate.author === "string";
+}
 
-function loadLettersFromStorage(): Letter[] {
+function userLettersOnly(letters: Letter[]) {
+  return letters.filter((letter) => !letter.id.startsWith("premade-"));
+}
+
+function withPremadeLetter(letters: Letter[]) {
+  const seen = new Set<string>();
+  const userLetters = userLettersOnly(letters).filter((letter) => {
+    if (seen.has(letter.id)) return false;
+    seen.add(letter.id);
+    return true;
+  });
+  return [...PREMADE_LETTERS, ...userLetters];
+}
+
+function loadCachedLetters(): Letter[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(LETTERS_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
-  return [];
+    if (!stored) return [];
+    const parsed: unknown = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.filter(isLetter) : [];
+  } catch {
+    return [];
+  }
 }
 
-function saveLettersToStorage(letters: Letter[]) {
+function saveCachedLetters(letters: Letter[]) {
   if (typeof window === "undefined") return;
   try {
-    const userLetters = letters.filter((l) => !l.id.startsWith("premade-"));
-    localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(userLetters));
-  } catch { /* ignore */ }
+    localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(userLettersOnly(letters)));
+  } catch {
+    // A full or unavailable localStorage should never block Firebase submission.
+  }
+}
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 export default function LetterSection() {
-  const [letters, setLetters] = useState<Letter[]>([]);
+  const [letters, setLetters] = useState<Letter[]>(PREMADE_LETTERS);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [letterContent, setLetterContent] = useState("");
   const [letterAuthor, setLetterAuthor] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const photoCycleRef = useRef(0);
 
-  // Initialize from localStorage + premade
   useEffect(() => {
-    const storedLetters = loadLettersFromStorage();
-    setLetters([...PREMADE_LETTERS, ...storedLetters]);
+    const cachedLetters = loadCachedLetters();
+    let active = true;
+    if (cachedLetters.length > 0) {
+      window.setTimeout(() => {
+        if (active) setLetters(withPremadeLetter(cachedLetters));
+      }, 0);
+    }
+    const fetchLetters = async () => {
+      try {
+        const response = await fetch("/api/letters", { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Shared letters are unavailable.");
+
+        if (data.configured === false) {
+          if (active) setStorageAvailable(false);
+          return;
+        }
+
+        const serverLetters = Array.isArray(data.letters) ? data.letters.filter(isLetter) : [];
+        if (active) {
+          const nextLetters = withPremadeLetter(serverLetters);
+          setLetters(nextLetters);
+          saveCachedLetters(nextLetters);
+          setStorageAvailable(true);
+        }
+      } catch {
+        if (active) setStorageAvailable(false);
+      }
+    };
+
+    fetchLetters();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.1 }
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
+      { threshold: 0.08 }
     );
+
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Fetch from Firestore (backup — merge with local)
   useEffect(() => {
-    const fetchLetters = async () => {
-      try {
-        const res = await fetch("/api/letters");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.letters && data.letters.length > 0) {
-            setLetters((prev) => {
-              const existingIds = new Set(prev.map((l) => l.id));
-              const newLetters = data.letters.filter((l: Letter) => !existingIds.has(l.id));
-              if (newLetters.length > 0) {
-                const updated = [...prev, ...newLetters];
-                saveLettersToStorage(updated);
-                return updated;
-              }
-              return prev;
-            });
-          }
-        }
-      } catch {
-        // Firebase not configured — localStorage is the source of truth
-      }
+    if (!selectedLetter) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedLetter(null);
     };
-    fetchLetters();
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selectedLetter]);
+
+  const openLetter = useCallback((letter: Letter) => {
+    setSelectedPhotoIndex(photoCycleRef.current % PHOTOS.length);
+    photoCycleRef.current = (photoCycleRef.current + 1) % PHOTOS.length;
+    setSelectedLetter(letter);
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!letterContent.trim() || !letterAuthor.trim()) return;
+    const content = letterContent;
+    const author = letterAuthor;
+
+    if (!content.trim() || !author.trim()) {
+      setSubmitMessage("Please add a letter and your name first.");
+      return;
+    }
 
     setIsSubmitting(true);
     setIsRolling(true);
+    setSubmitMessage("");
 
-    setTimeout(async () => {
-      try {
-        // Auto-approve moderation
-        const modRes = await fetch("/api/moderate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: letterContent }),
-        });
-        const modData = await modRes.json();
+    try {
+      const response = await fetch("/api/letters/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, author }),
+      });
+      const data = await response.json().catch(() => ({}));
 
-        if (!modData.isSafe) {
-          setSubmitMessage("Your letter didn't pass our content check. Please try again.");
-          setIsRolling(false);
-          setIsSubmitting(false);
-          setLetterContent("");
-          setLetterAuthor("");
-          setTimeout(() => setSubmitMessage(""), 4000);
-          return;
-        }
-
-        // Create letter locally first (guaranteed to show)
-        const newLetter: Letter = {
-          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          content: letterContent,
-          author: letterAuthor,
-          photoIndex: Math.floor(Math.random() * PHOTOS.length),
-        };
-
-        // Try to save to Firebase
-        let serverId: string | null = null;
-        try {
-          const subRes = await fetch("/api/letters/submit", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: letterContent, author: letterAuthor }),
-          });
-          if (subRes.ok) {
-            const data = await subRes.json();
-            if (data.id && !data.id.startsWith("local-")) {
-              serverId = data.id;
-            }
-          }
-        } catch { /* localStorage backup */ }
-
-        // Use server ID if available, otherwise local
-        if (serverId) newLetter.id = serverId;
-
-        // Add to state AND localStorage
-        setLetters((prev) => {
-          const updated = [...prev, newLetter];
-          saveLettersToStorage(updated);
-          return updated;
-        });
-
-        setSubmitMessage("Your letter has been sent! ♥");
-      } catch {
-        // Complete offline — still add letter
-        const newLetter: Letter = {
-          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          content: letterContent,
-          author: letterAuthor,
-          photoIndex: Math.floor(Math.random() * PHOTOS.length),
-        };
-        setLetters((prev) => {
-          const updated = [...prev, newLetter];
-          saveLettersToStorage(updated);
-          return updated;
-        });
-        setSubmitMessage("Your letter has been added! ♥");
+      if (!response.ok || !data.id) {
+        throw new Error(data.error || "Your letter could not be saved. Please try again.");
       }
 
+      const savedLetter: Letter = {
+        id: data.id,
+        content: typeof data.letter?.content === "string" ? data.letter.content : content,
+        author: typeof data.letter?.author === "string" ? data.letter.author : author,
+        createdAt: typeof data.letter?.createdAt === "string" ? data.letter.createdAt : undefined,
+      };
+
+      const nextLetters = withPremadeLetter([...letters, savedLetter]);
+      setLetters(nextLetters);
+      saveCachedLetters(nextLetters);
+      setStorageAvailable(true);
+
+      // Let the full manuscript roll finish even when Firebase responds quickly.
+      await wait(MANUSCRIPT_ROLL_MS);
       setLetterContent("");
       setLetterAuthor("");
+      setSubmitMessage("Your letter has been sent! ♥");
+    } catch (error) {
+      setSubmitMessage(error instanceof Error ? error.message : "Your letter could not be saved. Please try again.");
+    } finally {
       setIsRolling(false);
       setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(""), 4000);
-    }, 1400);
-  }, [letterContent, letterAuthor]);
-
-  const getPhotoSrc = (index: number) => {
-    const safeIndex = Math.abs(index) % PHOTOS.length;
-    return PHOTOS[safeIndex].src;
-  };
+      window.setTimeout(() => setSubmitMessage(""), 4500);
+    }
+  }, [letterAuthor, letterContent, letters]);
 
   return (
-    <section ref={sectionRef} className="relative py-20 md:py-32 px-4 md:px-6">
-      <div className="w-full max-w-4xl mx-auto text-center">
-        {/* Section Title */}
+    <section ref={sectionRef} className="letters-section relative px-4 py-20 md:px-6 md:py-32">
+      <div className="letter-section-shell">
         <motion.div
-          className="text-center mb-12 md:mb-16"
+          className="mb-10 text-center md:mb-14"
           initial={{ opacity: 0, y: 30 }}
           animate={visible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
         >
-          <h2
-            className="text-2xl md:text-3xl text-gold tracking-wider mb-2"
-            style={{ fontFamily: "var(--font-dancing)" }}
-          >
+          <h2 className="mb-2 text-3xl tracking-wider text-gold md:text-4xl" style={{ fontFamily: "var(--font-dancing)" }}>
             Write a Letter
           </h2>
-          <p
-            className="text-sm text-gold/50 tracking-wider"
-            style={{ fontFamily: "var(--font-playfair)" }}
-          >
-            Share your wishes for Mom &amp; Dad
+          <p className="text-base tracking-wider text-gold/60 md:text-lg" style={{ fontFamily: "var(--font-playfair)" }}>
+            Share your wishes for my Mom &amp; Dad
           </p>
         </motion.div>
 
-        {/* Letter Form — Centered */}
         <motion.div
-          className="relative max-w-xl mx-auto mb-12 md:mb-16"
+          className="letter-composer-wrap"
           initial={{ opacity: 0, y: 40 }}
           animate={visible ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.15 }}
         >
-          <div className={`vintage-paper rounded-lg p-6 md:p-8 ${isRolling ? "letter-rolling" : ""}`}>
-            <div className="absolute top-3 left-3 text-gold/20 text-2xl">✦</div>
-            <div className="absolute top-3 right-3 text-gold/20 text-2xl">✦</div>
+          <div className="manuscript-stage">
+            <div className={`vintage-paper manuscript-paper ${isRolling ? "letter-rolling" : ""}`}>
+              <div className="paper-star paper-star-left" aria-hidden="true">✦</div>
+              <div className="paper-star paper-star-right" aria-hidden="true">✦</div>
 
-            <textarea
-              value={letterContent}
-              onChange={(e) => {
-                if (e.target.value.length <= 500) setLetterContent(e.target.value);
-              }}
-              placeholder="Write your letter here..."
-              className="w-full h-32 md:h-40 bg-transparent resize-none outline-none text-[#5C4033] text-sm md:text-base leading-relaxed"
-              style={{ fontFamily: "var(--font-dancing)", fontSize: "1.05rem" }}
-              disabled={isSubmitting}
-            />
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-4 mt-4 pt-4 border-t border-gold/10">
-              <input
-                type="text"
-                value={letterAuthor}
-                onChange={(e) => setLetterAuthor(e.target.value)}
-                placeholder="Your name"
-                className="bg-transparent outline-none text-[#5C4033] text-sm w-full sm:w-40"
+              <textarea
+                value={letterContent}
+                maxLength={MAX_LETTER_CHARACTERS}
+                onChange={(event) => setLetterContent(event.target.value)}
+                placeholder="Write your letter here..."
+                className="letter-content-input"
                 style={{ fontFamily: "var(--font-dancing)" }}
                 disabled={isSubmitting}
               />
-              <div className="flex items-center justify-between sm:justify-end gap-4">
-                <span className="text-xs text-gold/40">{letterContent.length}/500</span>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !letterContent.trim() || !letterAuthor.trim()}
-                  className="px-6 py-2 rounded-full bg-gold/20 text-gold text-sm tracking-wider hover:bg-gold/30 transition-colors disabled:opacity-40"
-                  style={{ fontFamily: "var(--font-playfair)" }}
-                >
-                  {isSubmitting ? "Sending..." : "Send Letter"}
-                </button>
+
+              <div className="letter-form-footer">
+                <label className="postcard-name-field">
+                  <span className="postcard-name-label">FROM</span>
+                  <input
+                    type="text"
+                    value={letterAuthor}
+                    maxLength={100}
+                    onChange={(event) => setLetterAuthor(event.target.value)}
+                    placeholder="Your name"
+                    className="postcard-name-input"
+                    style={{ fontFamily: "var(--font-dancing)" }}
+                    disabled={isSubmitting}
+                  />
+                </label>
+
+                <div className="letter-submit-controls">
+                  <span className="letter-character-count">{letterContent.length}/{MAX_LETTER_CHARACTERS}</span>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="letter-send-button"
+                    style={{ fontFamily: "var(--font-playfair)" }}
+                  >
+                    {isSubmitting ? "Sending..." : "Send Letter"}
+                  </button>
+                </div>
               </div>
+              <div className="manuscript-roll-edge" aria-hidden="true" />
             </div>
           </div>
         </motion.div>
 
-        {/* Submit Message */}
         <AnimatePresence>
           {submitMessage && (
             <motion.p
-              className="text-center text-gold text-sm mb-8"
+              className={`letter-submit-message ${submitMessage.includes("could not") || submitMessage.includes("Please") ? "is-error" : ""}`}
               style={{ fontFamily: "var(--font-dancing)" }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, y: -6 }}
             >
               {submitMessage}
             </motion.p>
           )}
         </AnimatePresence>
 
-        {/* Honeycomb Grid — centered */}
+        {storageAvailable === false && (
+          <p className="letter-storage-hint" role="status">
+            Shared letters are temporarily unavailable. Please try sending again in a moment.
+          </p>
+        )}
+
         <motion.div
-          className="flex flex-wrap justify-center gap-3 md:gap-4 px-4"
-          initial={{ opacity: 0 }}
-          animate={visible ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          className="honeycomb-grid"
+          initial={{ opacity: 0, y: 18 }}
+          animate={visible ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.35 }}
         >
           {letters.map((letter) => (
-            <div
+            <button
+              type="button"
               key={letter.id}
               className="honeycomb-cell"
-              onClick={() => setSelectedLetter(letter)}
+              onClick={() => openLetter(letter)}
+              aria-label={`Read letter from ${letter.author}`}
             >
-              <span className="line-clamp-3">
-                {letter.content.slice(0, 60)}...
+              <span>
+                {letter.content.length > 78 ? `${letter.content.slice(0, 78)}...` : letter.content}
               </span>
-            </div>
+            </button>
           ))}
         </motion.div>
       </div>
 
-      {/* Letter Viewer Modal */}
       <AnimatePresence>
         {selectedLetter && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
+            className="letter-modal fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Anniversary letter"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -310,41 +326,45 @@ export default function LetterSection() {
           >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div
-              className="relative z-10 max-w-lg w-full glass-strong rounded-2xl p-6 md:p-8"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
+              className="letter-modal-card glass-strong relative z-10 w-full max-w-xl rounded-2xl p-5 md:p-8"
+              initial={{ opacity: 0, y: 22, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 22, scale: 0.96 }}
+              onClick={(event) => event.stopPropagation()}
             >
               <button
-                className="absolute top-4 right-4 text-gold/40 hover:text-gold text-xl"
+                type="button"
+                className="letter-modal-close"
+                aria-label="Close letter"
                 onClick={() => setSelectedLetter(null)}
               >
                 ✕
               </button>
 
-              <div className="w-full h-40 md:h-48 rounded-lg overflow-hidden mb-4 md:mb-6 bg-peach/20">
-                <img
-                  src={getPhotoSrc(selectedLetter.photoIndex)}
-                  alt="Memory"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              <div className="letter-memory-image">
+                <Image
+                  key={`${selectedLetter.id}-${selectedPhotoIndex}`}
+                  src={PHOTOS[selectedPhotoIndex].src}
+                  alt="A family memory"
+                  fill
+                  sizes="(max-width: 640px) calc(100vw - 40px), 560px"
+                  quality={68}
+                  className="object-cover"
                 />
               </div>
 
               <p
-                className="text-[#5C4033] text-base leading-relaxed mb-4 md:mb-6 whitespace-pre-wrap"
-                style={{ fontFamily: "var(--font-dancing)", fontSize: "1.1rem" }}
+                className="letter-modal-content"
+                style={{ fontFamily: "var(--font-dancing)" }}
               >
                 {selectedLetter.content}
               </p>
 
-              <p
-                className="text-right text-gold/60 text-sm"
-                style={{ fontFamily: "var(--font-playfair)" }}
-              >
-                — {selectedLetter.author}
-              </p>
+              {!selectedLetter.id.startsWith("premade-") && (
+                <p className="letter-modal-author" style={{ fontFamily: "var(--font-playfair)" }}>
+                  — {selectedLetter.author}
+                </p>
+              )}
             </motion.div>
           </motion.div>
         )}

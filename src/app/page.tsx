@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import HeroSection from "@/components/HeroSection";
 import BackgroundMusic from "@/components/BackgroundMusic";
 import PolaroidWall from "@/components/PolaroidWall";

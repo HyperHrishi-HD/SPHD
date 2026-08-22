@@ -4,14 +4,12 @@ import { motion } from "framer-motion";
 
 export default function CreditsSection() {
   return (
-    <footer className="relative py-16 md:py-24 px-6 bg-[#1A0F05]">
-      {/* Decorative top border */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+    <footer className="credits-section relative px-6 py-16 md:py-24">
+      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
 
-      <div className="w-full max-w-2xl mx-auto text-center flex flex-col items-center">
-        {/* Anniversary Text */}
+      <div className="credits-shell">
         <motion.p
-          className="text-gold/40 text-xs tracking-[0.3em] uppercase mb-6"
+          className="mb-6 text-xs uppercase tracking-[0.3em] text-gold/40"
           style={{ fontFamily: "var(--font-playfair)" }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -21,9 +19,8 @@ export default function CreditsSection() {
           Happy Anniversary
         </motion.p>
 
-        {/* Creator */}
         <motion.h3
-          className="text-2xl md:text-3xl text-gold mb-8"
+          className="mb-8 text-2xl text-gold md:text-3xl"
           style={{ fontFamily: "var(--font-dancing)" }}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -33,9 +30,8 @@ export default function CreditsSection() {
           By HyperHrishi HD
         </motion.h3>
 
-        {/* Links */}
         <motion.div
-          className="flex items-center justify-center gap-6 mb-8"
+          className="credits-links mb-8"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -45,26 +41,25 @@ export default function CreditsSection() {
             href="https://github.com/HyperHrishi-HD/SPHD"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gold/50 hover:text-gold text-sm tracking-wider transition-colors"
+            className="text-sm tracking-wider text-gold/50 transition-colors hover:text-gold"
             style={{ fontFamily: "var(--font-playfair)" }}
           >
             GitHub
           </a>
-          <span className="text-gold/20">·</span>
+          <span className="text-gold/20" aria-hidden="true">·</span>
           <a
             href="https://youtube.com/@HyperhrishiHD"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gold/50 hover:text-gold text-sm tracking-wider transition-colors"
+            className="text-sm tracking-wider text-gold/50 transition-colors hover:text-gold"
             style={{ fontFamily: "var(--font-playfair)" }}
           >
             YouTube
           </a>
         </motion.div>
 
-        {/* Date */}
         <motion.p
-          className="text-gold/30 text-xs tracking-widest mb-2"
+          className="mb-2 text-xs tracking-widest text-gold/30"
           style={{ fontFamily: "var(--font-playfair)" }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -75,7 +70,7 @@ export default function CreditsSection() {
         </motion.p>
 
         <motion.p
-          className="text-gold/30 text-xs tracking-widest"
+          className="text-xs tracking-widest text-gold/30"
           style={{ fontFamily: "var(--font-playfair)" }}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -85,9 +80,8 @@ export default function CreditsSection() {
           Happy Anniversary, Mom &amp; Dad ♥
         </motion.p>
 
-        {/* Copyright */}
-        <div className="mt-12 pt-6 border-t border-gold/10 w-full">
-          <p className="text-gold/20 text-[10px] tracking-wider leading-relaxed">
+        <div className="credits-copyright mt-12 border-t border-gold/10 pt-6">
+          <p className="text-[10px] leading-relaxed tracking-wider text-gold/20">
             © 2026 SPHD Project · All rights reserved · Built with love
           </p>
         </div>

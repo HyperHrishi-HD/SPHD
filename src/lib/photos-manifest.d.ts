@@ -3,7 +3,6 @@ declare module "@/lib/photos-manifest.json" {
     id: number;
     src: string;
     alt: string;
-    date?: string;
   }>;
   export default photos;
 }

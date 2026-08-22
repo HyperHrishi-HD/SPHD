@@ -1,42 +1,55 @@
 import { NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const noStoreHeaders = { "Cache-Control": "no-store, max-age=0" };
+
+function serializeDate(value: unknown) {
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return undefined;
+}
 
 export async function GET() {
   try {
-    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY) {
-      return NextResponse.json({ letters: [] });
-    }
-
-    if (!getApps().length) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-        }),
-      });
-    }
-
-    const db = getFirestore();
-    // Query without composite index — order by createdAt desc only
-    const snapshot = await db
-      .collection("letters")
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get();
+    const db = getAdminFirestore();
+    const snapshot = await db.collection("letters").orderBy("createdAt", "desc").limit(100).get();
 
     const letters = snapshot.docs
-      .filter((doc) => doc.data().approved !== false) // client-side approved filter
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString(),
-      }));
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          content: typeof data.content === "string" ? data.content : "",
+          author: typeof data.author === "string" ? data.author : "",
+          createdAt: serializeDate(data.createdAt),
+        };
+      })
+      .filter((letter) => letter.content.trim().length > 0 && letter.author.trim().length > 0);
 
-    return NextResponse.json({ letters });
+    return NextResponse.json({ letters }, { headers: noStoreHeaders });
   } catch (error) {
-    console.error("Error fetching letters:", error);
-    return NextResponse.json({ letters: [] });
+    const message = error instanceof Error ? error.message : "unknown error";
+
+    // A local build without environment variables is a valid development state.
+    // Keep the read contract successful so it does not create a browser network error;
+    // the UI still shows the unavailable state and writes remain protected by the API.
+    if (message.startsWith("Missing ")) {
+      return NextResponse.json(
+        { letters: [], configured: false, error: "Shared letters are not configured." },
+        { headers: noStoreHeaders }
+      );
+    }
+
+    console.error("Unable to read shared letters:", message);
+    return NextResponse.json(
+      { letters: [], configured: true, error: "Shared letters are not available right now." },
+      { status: 503, headers: noStoreHeaders }
+    );
   }
 }

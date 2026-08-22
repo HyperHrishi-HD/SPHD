@@ -5,24 +5,29 @@ import { motion } from "framer-motion";
 
 export default function VideoSection() {
   const [curtainOpen, setCurtainOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let openTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          // Open curtains after a brief delay
-          setTimeout(() => setCurtainOpen(true), 300);
+        if (entry.isIntersecting && openTimer === null) {
+          // Open curtains after a brief delay, but cancel if the visitor leaves first.
+          openTimer = setTimeout(() => setCurtainOpen(true), 300);
+        } else if (!entry.isIntersecting && openTimer !== null) {
+          clearTimeout(openTimer);
+          openTimer = null;
         }
       },
       { threshold: 0.3 }
     );
 
     if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (openTimer !== null) clearTimeout(openTimer);
+    };
   }, []);
 
   // Load video only after curtains start opening
