@@ -47,6 +47,10 @@ body {
   background: radial-gradient(ellipse at center, transparent 58%, rgba(10,4,2,0.55) 100%);
 }
 
+/* Whole scene slides as one pre-rasterized composited layer —
+   prevents tile re-raster ghosting during motion */
+#scroller { will-change: transform; transform: translate3d(0, 0, 0); }
+
 /* ── Hero ── */
 .hero {
   height: 1280px;
@@ -123,7 +127,7 @@ body {
 </style>
 </head>
 <body>
-
+<div id="scroller">
 <div class="hero">
   <h1 id="shimmer">Happy Anniversary<br>Mom &amp; Dad</h1>
   <div class="rule"></div>
@@ -135,6 +139,7 @@ body {
 <div class="wall" id="wall"></div>
 
 <div class="end-space"><div class="end-glow" id="glow"></div></div>
+</div>
 
 <div class="fx" id="fx"></div>
 <div class="vignette"></div>
@@ -228,6 +233,7 @@ const leafEls = [];
 
 const glowEl = document.getElementById('glow');
 const shimmerEl = document.getElementById('shimmer');
+const scrollerEl = document.getElementById('scroller');
 
 let maxScroll = 0;
 function computeLayout() {
@@ -238,11 +244,12 @@ function computeLayout() {
 window.__setTime = function(tms) {
   const t = tms / 1000;
 
-  // Scroll (smoothstep ease-in-out)
+  // Scroll — composited transform instead of window.scrollTo
   if (tms > HOLD) {
     const p = Math.min(1, (tms - HOLD) / (TOTAL - HOLD));
     const e = p * p * (3 - 2 * p);
-    window.scrollTo(0, e * maxScroll);
+    const y = e * maxScroll;
+    scrollerEl.style.transform = 'translate3d(0,' + (-y).toFixed(2) + 'px,0)';
   }
 
   // Hero shimmer

@@ -38,6 +38,10 @@ await page.evaluate("window.__setTime(0)");
 let lastLogged = -1;
 for (let i = startFrame; i < endFrame; i++) {
   await page.evaluate((t) => window.__setTime(t), (i / FPS) * 1000);
+  // Wait for the compositor to commit the updated frame before capturing
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+  );
   await page.screenshot({
     path: join(FRAMES_DIR, `f_${String(i).padStart(5, "0")}.jpg`),
     type: "jpeg",
