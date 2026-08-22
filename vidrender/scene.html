@@ -115,7 +115,7 @@ body {
 }
 
 .end-space {
-  height: 520px;
+  height: 1280px;
   position: relative; z-index: 1;
   display: flex; align-items: center; justify-content: center;
 }
@@ -123,6 +123,13 @@ body {
   width: 130px; height: 130px; border-radius: 50%;
   background: radial-gradient(circle at center, rgba(255,190,140,0.35) 0%, rgba(192,57,43,0.15) 45%, transparent 70%);
   will-change: transform, opacity;
+}
+#endclip {
+  width: 680px;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.65), 0 6px 18px rgba(0,0,0,0.4);
+  will-change: opacity;
+  opacity: 0;
 }
 </style>
 </head>
@@ -138,7 +145,7 @@ body {
 
 <div class="wall" id="wall"></div>
 
-<div class="end-space"><div class="end-glow" id="glow"></div></div>
+<div class="end-space"><img id="endclip" alt="" draggable="false"><div class="end-glow" id="glow"></div></div>
 </div>
 
 <div class="fx" id="fx"></div>
@@ -234,6 +241,15 @@ const leafEls = [];
 const glowEl = document.getElementById('glow');
 const shimmerEl = document.getElementById('shimmer');
 const scrollerEl = document.getElementById('scroller');
+const endclipEl = document.getElementById('endclip');
+
+// ── Ending clip: first 6s of the user's video as deterministic frames ──
+const CLIP_FRAMES = [];
+for (let i = 1; i <= 180; i++) {
+  CLIP_FRAMES.push(new Image());
+  CLIP_FRAMES[i - 1].src = 'clip/c_' + String(i).padStart(4, '0') + '.jpg';
+}
+const CLIP_START = TOTAL - 6000; // clip occupies the final 6 seconds
 
 let maxScroll = 0;
 function computeLayout() {
@@ -244,12 +260,22 @@ function computeLayout() {
 window.__setTime = function(tms) {
   const t = tms / 1000;
 
-  // Scroll — composited transform instead of window.scrollTo
+  // Scroll — composited transform instead of window.scrollTo.
+  // Gliding finishes at CLIP_START so the ending clip holds steady for 6s.
   if (tms > HOLD) {
-    const p = Math.min(1, (tms - HOLD) / (TOTAL - HOLD));
+    const p = Math.min(1, (tms - HOLD) / (CLIP_START - HOLD));
     const e = p * p * (3 - 2 * p);
     const y = e * maxScroll;
     scrollerEl.style.transform = 'translate3d(0,' + (-y).toFixed(2) + 'px,0)';
+  }
+
+  // Ending clip
+  if (tms >= CLIP_START - 500) {
+    const idx = Math.min(179, Math.max(0, Math.floor((tms - CLIP_START) / 1000 * 30)));
+    endclipEl.src = CLIP_FRAMES[idx].src;
+    endclipEl.style.opacity = tms >= CLIP_START ? '1' : '0';
+    glowEl.style.opacity = tms >= CLIP_START ? '0' : String(glowEl.style.opacity || 0.85);
+    glowEl.style.display = tms >= CLIP_START ? 'none' : 'block';
   }
 
   // Hero shimmer
@@ -294,7 +320,8 @@ window.__setTime = function(tms) {
 
 window.__ready = function() {
   return document.fonts.status === 'loaded' &&
-    Array.from(document.images).every(function(im) { return im.complete && im.naturalWidth > 0; });
+    Array.from(document.images).every(function(im) { return im.id === 'endclip' || (im.complete && im.naturalWidth > 0); }) &&
+    CLIP_FRAMES.every(function(im) { return im.complete && im.naturalWidth > 0; });
 };
 
 window.__init = function() {
